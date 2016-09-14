@@ -1,0 +1,21 @@
+*Now the client sends a Datagram to the server and the last one modifies the content and sends it back to the client.
+
+*To run it successfully we will use two terminals as there are two mains:
+
+	1- gcc -o server server.c communicationSockets.c
+	2- gcc -o client client.c communicationSockets.c
+	3- In the current terminal, ./server
+	4- Open new terminal, use CD, ./client
+
+
+Named pipes:
+http://codingfreak.blogspot.com/2008/09/client-server-example-with-pipes.html
+
+Sockets:
+http://www.linuxhowtos.org/C_C++/socket.htm
+http://www.thegeekstuff.com/2011/12/c-socket-programming/?utm_source=feedburner
+
+*Marshalling modified using memcpy from data struct to datagram and viceversa, considering the following:
+1- The structure doesnt contain pointers, as the memory adresses are relative to the client or server.
+2- Client and server are executed from CPU´s of same arquitecture.
+3- Data on structures filled to data bus word does not break the programm.
