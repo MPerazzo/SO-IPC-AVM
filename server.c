@@ -37,18 +37,18 @@ int main(int argc, char *argv[])
 			unMarshall(&datagram, &data);
 
 			if (data.avmdata.number==3)
-        		printf("SV -Unmarshall worked as expected\n");
+        		printf("SV - Unmarshall worked as expected\n");
 
 			printf("SV - Data opcode value is %d\n", data.opcode);
-        	printf("SV - Data pid value is %d\n", data.client_pid);
-        	printf("SV - Data number value is %d\n", data.avmdata.number);			
+        		printf("SV - Data pid value is %d\n", data.client_pid);
+        		printf("SV - Data number value is %d\n", data.avmdata.number);			
 			
 			Attend(&sender, &data);
 			
 			free(datagram.arguments);
 
-        	//Transform data to byte-flow
-    		Marshall(&datagram, &data);
+        		//Transform data to byte-flow
+    			Marshall(&datagram, &data);
 
 			sendData(&sender, &datagram);
 			

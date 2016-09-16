@@ -176,6 +176,7 @@ void srv_receiveData(Connection * connection, Datagram * datagram) {
 
         if (request_sock < 0) {
             printf ("Port is being used.\n");
+	    exit(1);
             return;
         }
         
