@@ -21,3 +21,5 @@ http://www.thegeekstuff.com/2011/12/c-socket-programming/?utm_source=feedburner
 3- Data on structures filled to data bus word does not break the programm.
 
 *This implementation can stand multiple servers running as long as they dont have the same ports and IP assigned.
+
+*Logging Deamon implementation assigns same queue values to all the servers, so to know from which server the message is, a field containing the pid was added to the message struct.
