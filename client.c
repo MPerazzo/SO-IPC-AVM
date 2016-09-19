@@ -34,9 +34,9 @@ int main(int argc, char *argv[])
     //Transform byte-flow to data
     unMarshall(&datagram, &data);
 
-    printf("Cli - newData opcode value is %d\n", data.opcode);
-    printf("Cli - newData pid value is %d\n", data.client_pid);
-    printf("Cli - newData number value is %d\n", data.avmdata.number);
+    printf("Cli - Data opcode value is %d\n", data.opcode);
+    printf("Cli - Data pid value is %d\n", data.client_pid);
+    printf("Cli - Data number value is %d\n", data.avmdata.number);
     printf("Cli - Message from server is %s\n", data.avmdata.message);
  
 }
