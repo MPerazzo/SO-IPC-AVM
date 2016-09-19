@@ -1,12 +1,3 @@
-*Now the client sends a Datagram to the server and the last one modifies the content and sends it back to the client.
-
-*To run it successfully we will use two terminals as there are two mains:
-
-	1- gcc -o server server.c communicationSockets.c
-	2- gcc -o client client.c communicationSockets.c
-	3- In the current terminal, ./server
-	4- Open new terminal, use CD, ./client
-
 
 Named pipes:
 http://codingfreak.blogspot.com/2008/09/client-server-example-with-pipes.html
