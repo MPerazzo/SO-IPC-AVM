@@ -1,0 +1,1 @@
+*Indicar si la base de datos sincroniza o no. Si no sincroniza, el servidor maestro sincroniza al resto para acceder.
