@@ -5,7 +5,8 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "data.h"
+#include "types.h"
+#include "comms.h"
 
 #define port 4000
 #define server_ip "127.0.0.1"
@@ -16,32 +17,30 @@
 
 struct sockaddr_in server, client;
 
-int socket_request; // client socket
-int socket_server; // server socket
-int socket_client;
-int clistruct_size ;
+int socket_server;
+
+int clistruct_size;
 
 bool is_server;
 
-void srv_initChannel();
-void clt_initChannel();
+Connection * srv_initChannel();
+Connection * clt_initChannel();
 int srv_sendData(Connection *, Datagram *);
 int clt_sendData(Connection *, Datagram *);
-void srv_receiveData(Connection *, Datagram *);
-void clt_receiveData(Connection *, Datagram *);
+int srv_receiveData(Connection *, Datagram *);
+int clt_receiveData(Connection *, Datagram *);
 
 
-
-void initChannel(int bool_server) {
+Connection * initChannel(int bool_server) {
 
     switch (bool_server) {
 
     case true:
-        srv_initChannel();
+        return srv_initChannel();
         break;
 
     case false:
-        clt_initChannel();
+        return clt_initChannel();
         break;
     }
 }
@@ -58,19 +57,19 @@ int sendData(Connection * connection, Datagram * params) {
     }
 }
 
-void receiveData(Connection * connection, Datagram * params) {
+int receiveData(Connection * connection, Datagram * params) {
     switch (is_server) {
     case true:
-        srv_receiveData(connection, params);
+        return srv_receiveData(connection, params);
         break;
 
     case false:
-        clt_receiveData(connection, params);
+        return clt_receiveData(connection, params);
         break;
     }
 }
 
-void srv_initChannel(void) {
+Connection * srv_initChannel(void) {
 
     is_server=true;
 
@@ -91,7 +90,7 @@ void srv_initChannel(void) {
     //Relates the socket to an address
     if (bind(socket_server, (struct sockaddr *)&server , sizeof(server)) < 0) {
         perror("bind failed. Error");
-        return;
+        exit(1);
     }
 
     //Listen for connections from socket
@@ -99,35 +98,36 @@ void srv_initChannel(void) {
 
     clistruct_size = sizeof(struct sockaddr_in);
 
+    return createConnection(socket_server);
+
 }
 
 
-void clt_initChannel(void) {
+Connection * clt_initChannel(void) {
+
+	int socket_client;
 
     is_server=false;
 
-    socket_client = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (socket_client == -1)
-    {
-        printf("Could not create socket\n");
-    }
+    if (socket_client = socket(AF_INET, SOCK_STREAM, 0)<0)
+    	printf ("Couldn't create socket\n");
 
     server.sin_addr.s_addr = inet_addr(server_ip);
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
 
+    return createConnection(socket_client);
 }
 
-int srv_sendData(Connection * conection, Datagram * datagram) {
+int srv_sendData(Connection * connection, Datagram * datagram) {
 
     int arguments_size = sizeof(Data);
 
     void * package = calloc(arguments_size, 1); 
     memcpy(package, datagram->arguments, arguments_size);
 
-    write(socket_request, package, arguments_size);
-    close(socket_request);
+    write(connection->id, package, arguments_size);
+    disConnect(connection);
 
     free(package);
 
@@ -141,75 +141,91 @@ int clt_sendData(Connection * connection, Datagram * datagram) {
     void * package = calloc(arguments_size, 1);
     memcpy(package, datagram->arguments, arguments_size);
 
-    if ((socket_client = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((connection->id = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf ("Couldn't create socket\n");
+        return -1;
     }
 
-    if ((connect(socket_client, (struct sockaddr *)&server, sizeof(server))) >= 0) {
-        if (send(socket_client, package, *((int * )package), MSG_NOSIGNAL) < 0) {
+    if ((connect(connection->id, (struct sockaddr *)&server, sizeof(server)) >= 0)) {
+        if (send(connection->id, package, *((int * )package), MSG_NOSIGNAL) < 0) {
             printf("Send failed\n");
             return -1;
         }
     }
-    else
+    else {
+    	printf("Couldn´t connect to server\n");
         return -1;
+    }
 
     free(package);
     
     return 0;
 }
 
-void srv_receiveData(Connection * connection, Datagram * datagram) {
+int srv_receiveData(Connection * connection, Datagram * datagram) {
         
     void * package = calloc(MAX_RDATA_SIZE, 1);
 
     int read_size;
 
     //recieve information from fd
-    if ((read_size = recv(socket_request, package, MAX_RDATA_SIZE, 0)) > 0) {
-        datagram->arguments = calloc(read_size, 1); 
-        memcpy(datagram->arguments, package, read_size);
+    if ((read_size = recv(connection->id, package, MAX_RDATA_SIZE, 0)) < 0) {
+    	printf("Could receive information from socket\n");
+    	return -1;
     }
-        
+    
+    datagram->arguments = calloc(read_size, 1); 
+    memcpy(datagram->arguments, package, read_size);
+       
     free(package);
     
+    return read_size;
 }
 
-void clt_receiveData(Connection * connection, Datagram * datagram) {
+int clt_receiveData(Connection * connection, Datagram * datagram) {
 
     void * package = calloc(MAX_RDATA_SIZE, 1);
     
     int read_size;
 
-    if ((read_size = recv(socket_client, package, MAX_RDATA_SIZE, 0)) < 0) {
+    if ((read_size = recv(connection->id, package, MAX_RDATA_SIZE, 0)) < 0) {
         puts("Server is not avaiable.\n");
-        return;
+        return -1;
     }
 
-    close(socket_client);
+    disConnect(connection);
 
     datagram->arguments = calloc(read_size, 1); 
     memcpy(datagram->arguments, package, read_size );
 
     free(package);
+
+    return read_size;
 }
 
-void acceptConn() {
+ int acceptConnection(Connection * connection) {
     
+    int socket_client;
+
     //get socket fd that is trying to connect with server
-    if ((socket_request = accept(socket_server, (struct sockaddr *)&client, (socklen_t*)&clistruct_size))) {
-        if (socket_request < 0) {
+    if ((socket_client = accept(socket_server, (struct sockaddr *)&client, (socklen_t*)&clistruct_size))<0) {
             printf ("Port is being used.\n");
             exit(1);
-        }
+    }
+    else {
+    	connection->id = socket_client;
+        return socket_client;
     }
 }
 
-int get_requestid() {
-    return socket_request;
+Connection * createConnection(int id){
+  
+  Connection * connection;
+  connection = malloc(sizeof(Connection));
+  connection -> id = id;
+  return connection;
 }
 
-int get_serverid() {
-    return socket_server;
+void disConnect(Connection * connection) {
+    close(connection->id);
 }
-

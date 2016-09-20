@@ -2,14 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "data.h"
+#include "types.h"
 
-void initChannel(int);
-void initDB();
+Connection * initChannel(int);
+void initDB_calls();
 void Attend(Connection *, Data *);
 int initLogin(int);
 void acceptConn();
-int get_requestid();
 int get_serverid();
 
 Data data;
@@ -20,20 +19,21 @@ fd_set active_fd_set, read_fd_set;
 
 int main(int argc, char *argv[])
 {
+    Connection * serverConnection;
 
-    initChannel(1);
+    serverConnection = initChannel(1);
     
     if ( initLogin(false) == -1 ) {
     	printf("Couldn´t create message queue for server\n");
     	exit(1);
     }
     
-    initDB();
+    initDB_calls();
     
     int fpid;
 
-    FD_ZERO (&active_fd_set);
-    FD_SET (get_serverid(), &active_fd_set);
+    FD_ZERO(&active_fd_set);
+    FD_SET(serverConnection->id, &active_fd_set);
 
     while(1) {
 
@@ -49,14 +49,16 @@ int main(int argc, char *argv[])
             
             if (FD_ISSET(i, &read_fd_set)) {
         
-                if (i == get_serverid()) {
+                if (i == serverConnection->id) {
                     /* Connection request on server. */
-                    acceptConn();
-                    FD_SET(get_requestid(), &active_fd_set);
+                    acceptConnection(&sender);
+                    FD_SET(sender.id, &active_fd_set);
                 }
             
                 else {
                     /* Data arriving on an already-connected socket. */
+                    
+                    sender.id = i; // or sender.id=listener.id or get_requestid();
                     receiveData(&sender, &datagram);
                     printf("SV - receiveData passed\n");
                     
@@ -83,6 +85,7 @@ int main(int argc, char *argv[])
                             //Transform data to byte-flow
                             Marshall(&datagram, &data);
 
+                            sender.id = i;
                             sendData(&sender, &datagram);
                 
                             //Kill child to avoid it from entering the loop and create infinite childs.
@@ -97,7 +100,7 @@ int main(int argc, char *argv[])
     }           
 }
 
-void initDB() {
+void initDB_calls() {
 
 }
 
