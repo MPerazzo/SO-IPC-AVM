@@ -3,13 +3,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "types.h"
+#include "comms.h"
 
-Connection * initChannel(int);
 void initDB_calls();
 void Attend(Connection *, Data *);
-int initLogin(int);
-void acceptConn();
-int get_serverid();
 
 Data data;
 Datagram datagram;
@@ -28,9 +25,8 @@ int main(int argc, char *argv[])
     	exit(1);
     }
     
+    sndMessage("Hi Mate", 1);
     initDB_calls();
-    
-    int fpid;
 
     FD_ZERO(&active_fd_set);
     FD_SET(serverConnection->id, &active_fd_set);
@@ -62,6 +58,8 @@ int main(int argc, char *argv[])
                     receiveData(&sender, &datagram);
                     printf("SV - receiveData passed\n");
                     
+                    int fpid;
+
                     switch (fpid= fork()) {
             
                         case -1:

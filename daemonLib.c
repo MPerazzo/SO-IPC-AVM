@@ -12,25 +12,15 @@ mtype:
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "types.h"
-
-#define MAX_SIZE 50
-
-void _clearmsg();
+#include "daemon.h"
 
 int qmessage_in, qmessage_out;
 bool is_loggingServ;
 key_t k_in, k_out;
 
-struct
-{
-	long mtype;
-	char mdata[MAXM_LEN];
-	int svpid;
-}
-msg;
+Message msg;
 
-int initLogin(int is_logsrv) {
+int initLogin(bool is_logsrv) {
 
 	switch (is_logsrv) {
 
@@ -71,7 +61,7 @@ int create_queue() {
 	return 0;
 }
 
-int sndMessage(char * message, int type) {
+int sndMessage(char message[], int type) {
 	
 	msg.mtype = type;
 	msg.svpid = getpid();
@@ -99,9 +89,26 @@ int rcvMessage(int type)  {
 
 }
 
- void _clearmsg() {
+int rcv_InfoMessage() {
+	return rcvMessage(1);
+}
+
+int rcv_WarningMessage() {
+	return rcvMessage(2);
+}
+
+int rcv_ErrorMessage() {
+	return rcvMessage(3);
+}
+
+void _clearmsg() {
  	int i;
- 	for (i=0; i<MAX_SIZE ; i++)
+ 	for (i=0; i<MAXM_LEN; i++)
  		msg.mdata[i]=0;	
  }
+
+ void printMessage(bool is_logsrv) {
+	char * tosay = (is_logsrv==0)?"Deamon":"Server";
+	printf("%s .\nDesciption : Message type %ld, received from %s pid : %d\n", msg.mdata, msg.mtype, tosay, msg.svpid);
+}
 
