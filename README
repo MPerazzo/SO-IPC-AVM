@@ -13,7 +13,7 @@ http://www.thegeekstuff.com/2011/12/c-socket-programming/?utm_source=feedburner
 *Marshalling modified using memcpy from data struct to datagram and viceversa, considering the following:
 1- The structure doesnt contain pointers, as the memory adresses are relative to the client or server.
 2- Client and server are executed from CPU´s of same arquitecture.
-3- Data on structures filled to data bus word does not break the programm.
+3- Packing flag on structures is set to 0.
 
 *This implementation can stand multiple servers running as long as they dont have the same ports and IP assigned.
 

@@ -2,11 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
+
 #include "types.h"
 #include "comms.h"
 
 void initDB_calls();
 void Attend(Connection *, Data *);
+void srv_sigRutine(int);
 
 Data data;
 Datagram datagram;
@@ -16,6 +19,8 @@ fd_set active_fd_set, read_fd_set;
 
 int main(int argc, char *argv[])
 {
+    signal(SIGINT, srv_sigRutine);
+
     Connection * serverConnection;
 
     serverConnection = initChannel(1);
@@ -106,4 +111,10 @@ void Attend(Connection * sender, Data * data) {
     //Simulating server behaviour on database
     data->avmdata.number=5000;
     strcpy(data->avmdata.message, "KBOY");
+}
+void srv_sigRutine(int sig) {
+    /* close connection related to data base, lock or unlock on data base*/
+    printf("\n");
+    printf("Server proccess with pid: %d terminated\n", getpid());
+    exit(1);
 }

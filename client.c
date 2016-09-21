@@ -2,10 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <signal.h>
+
 #include "types.h"
 #include "comms.h"
 
 void communicate(Connection *, Datagram *);
+void clt_sigRutine(int);
 
 Data data;
 Datagram datagram;
@@ -13,6 +16,8 @@ Connection sender;
 
 int main(int argc, char *argv[])
 {
+	signal(SIGINT, clt_sigRutine);
+
     Connection * clientConnection;
 
     clientConnection=initChannel(0);
@@ -54,3 +59,10 @@ void communicate(Connection * sender, Datagram * datagr) {
         printf("Communication with server failed\n");
     }
 }
+
+void clt_sigRutine(int sig) {
+	printf("\n");
+	printf("Client proccess with pid: %d terminated\n", getpid());
+	exit(1); 
+}
+

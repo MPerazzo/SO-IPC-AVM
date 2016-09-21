@@ -1,6 +1,11 @@
-#define MAXM_LEN 50
+#ifndef _DATAGRAM_H
+#define _DATAGRAM_H
 
-void _clearmsg();
+#define MAXM_LEN 50
+#define INFO_TYPE 1
+#define WARNING_TYPE 2
+#define ERROR_TYPE 3
+#define MESSAGE_TYPES 3
 
 typedef enum { false, true } bool;
 
@@ -11,3 +16,5 @@ typedef struct
 	int svpid;
 }
 Message;
+
+#endif

@@ -14,6 +14,8 @@ mtype:
 #include <unistd.h>
 #include "daemon.h"
 
+void _clearmsg();
+
 int qmessage_in, qmessage_out;
 bool is_loggingServ;
 key_t k_in, k_out;
@@ -90,15 +92,15 @@ int rcvMessage(int type)  {
 }
 
 int rcv_InfoMessage() {
-	return rcvMessage(1);
+	return rcvMessage(INFO_TYPE);
 }
 
 int rcv_WarningMessage() {
-	return rcvMessage(2);
+	return rcvMessage(WARNING_TYPE);
 }
 
 int rcv_ErrorMessage() {
-	return rcvMessage(3);
+	return rcvMessage(ERROR_TYPE);
 }
 
 void _clearmsg() {
@@ -107,8 +109,12 @@ void _clearmsg() {
  		msg.mdata[i]=0;	
  }
 
- void printMessage(bool is_logsrv) {
-	char * tosay = (is_logsrv==0)?"Deamon":"Server";
-	printf("%s .\nDesciption : Message type %ld, received from %s pid : %d\n", msg.mdata, msg.mtype, tosay, msg.svpid);
+char * typetoString(long type) {	
+	char * strings[MESSAGE_TYPES] = {"Info", "Warning", "Error"};
+	return strings[type-1];
 }
 
+ void printMessage(bool is_logsrv) {
+	char * string = (is_logsrv==0)?"Deamon":"Server";
+	printf("%s .\nDesciption : Message type %s, received from %s pid : %d\n", msg.mdata, typetoString(msg.mtype), string, msg.svpid);
+}
