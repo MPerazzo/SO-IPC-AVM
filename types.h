@@ -31,11 +31,7 @@ typedef struct __attribute__((__packed__)) {
 } Data;
 
 typedef struct {
-	char * arguments;
+	char * payload;
 } Datagram;
-
-typedef struct {
-	int id;
-} Connection;
 
 #endif

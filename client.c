@@ -1,68 +1,50 @@
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include "types.h"
-#include "comms.h"
+#include "comm.h"
 
-void communicate(Connection *, Datagram *);
-void clt_sigRutine(int);
 
-Data data;
-Datagram datagram;
-Connection sender;
+int main(int argc, char *argv[]) {
 
-int main(int argc, char *argv[])
-{
-	signal(SIGINT, clt_sigRutine);
+    int counter = 0;
+    Data * data;
+    Data * serverResponse;
+    Connection * connection;
+    char * address = "/tmp/listener";
 
-    Connection * clientConnection;
+    data = malloc(sizeof(Data));
+    data->size = sizeof(Data);
+    data->client_pid = getpid();
 
-    clientConnection=initChannel(0);
+    /*        */printf("[client] connecting to server on address %s\n", address);
 
-    sender.id=clientConnection->id;
+    connection = comm_connect(address);
 
-    
-    while(1) {
-        //Simulating client request and Data
-        void * newdata = calloc(sizeof(data), 1);
-        memcpy(&data, newdata, sizeof(newdata));
-        data.size = sizeof(data);
-        data.opcode = 1;
-        data.client_pid = 2;
-        data.avmdata.number = 3;
-       
-        //Transform data to byte-flow
-        Marshall(&datagram, &data);
+    /*        */printf("[client] connection established. sending data\n");
 
-        //Send and receive Datagram modified by server
-        communicate(&sender, &datagram);
+    while(counter < 200) {
 
-        //Transform byte-flow to data
-        unMarshall(&datagram, &data);
+	sleep(1);
 
-        printf("Cli - Data opcode value is %d\n", data.opcode);
-        printf("Cli - Data pid value is %d\n", data.client_pid);
-        printf("Cli - Data number value is %d\n", data.avmdata.number);
-        printf("Cli - Message from server is %s\n", data.avmdata.message);
-        sleep(2);
+        data->opcode = counter;
+
+        sendData(connection, data);
+
+        /*        */printf("[client] sent counter = %d\n", counter);
+
+        serverResponse = receiveData(connection);
+
+	counter = serverResponse->opcode;
+
+        /*        */printf("[client] received counter = %d\n", counter);
+
+	counter += 5;
     }
 
-}
+    /*        */printf("[client] done\n");
 
-void communicate(Connection * sender, Datagram * datagr) {
-	if (sendData(sender, datagr) != -1) 
-		receiveData(sender, datagr);
-    else {
-        printf("Communication with server failed\n");
-    }
 }
-
-void clt_sigRutine(int sig) {
-	printf("\n");
-	printf("Client proccess with pid: %d terminated\n", getpid());
-	exit(1); 
-}
-

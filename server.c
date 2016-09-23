@@ -2,69 +2,68 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "data.h"
+#include "types.h"
+#include "comm.h"
 
-void initChannel(int);
-void initDB();
-void Attend(Connection *, Data *);
+void newSession(Connection *);
 
-Data data;
-Datagram datagram;
-Connection sender;
 
 int main(int argc, char *argv[])
 {
+	int newpid;
+	Listener * listener;
+	Connection * connection;
+	char * address = "/tmp/listener";
 
-    initChannel(1);
-    initDB();
-    
-    int fpid;
+	listener = comm_listen(address);
 
-    while(1) {
+	/*        */printf("[server] awaiting connection requests\n");
 
-    	//receiveData from Client
-        receiveData(&sender, &datagram);
-        
-        printf("SV - receiveData passed\n");
+	while(1) {
 
-        switch (fpid= fork()) {
+		connection = comm_accept(listener);
+
+		newpid = fork();
+
+		if(newpid == 0) {
+
+			newSession(connection);
+
+			break;
 		
-		case -1:
-			perror("Couldn´t fork server\n");
-			exit(1);
-		case 0:
-			//Transform byte-flow to data
-			unMarshall(&datagram, &data);
+		} 
 
-			if (data.avmdata.number==3)
-        		printf("SV - Unmarshall worked as expected\n");
-
-			printf("SV - Data opcode value is %d\n", data.opcode);
-        		printf("SV - Data pid value is %d\n", data.client_pid);
-        		printf("SV - Data number value is %d\n", data.avmdata.number);			
-			
-			Attend(&sender, &data);
-			
-			free(datagram.arguments);
-
-        		//Transform data to byte-flow
-    			Marshall(&datagram, &data);
-
-			sendData(&sender, &datagram);
-			
-			//Kill child to avoid it from entering the loop and create infinite childs.
-			exit(0);
-       
-		}        
-    }
-}
-
-void initDB() {
+	}
 
 }
 
-void Attend(Connection * sender, Data * data) {
-    //Simulating server behaviour on database
-    data->avmdata.number=5000;
-    strcpy(data->avmdata.message, "KBOY");
+void newSession(Connection * connection) {
+
+	int counter = 0;	
+	
+	Data * data;
+
+	/*        */printf("[session %d] new client session started\n", getpid());
+
+
+	while(counter < 190) {
+
+		data = receiveData(connection);
+
+		counter = data->opcode;
+
+		/*        */printf("[session %d] received counter = %d\n", getpid(), counter);
+
+		counter += 5;
+
+		data->opcode = counter;
+
+		/*        */printf("[session %d] sending counter = %d\n", getpid(), counter);
+
+		sendData(connection, data);
+
+	}
+
+	/*        */printf("[session %d] session done\n", getpid());
+
 }
