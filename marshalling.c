@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #include "types.h"
 #include "comm.h"
@@ -35,6 +37,8 @@ Data * unmarshall(Datagram * datagram) {
 void sendData(Connection * connection, Data * data) {
 
 	Datagram * datagram;
+
+	data->sender_pid = getpid();
 
 	datagram = marshall(data);
 

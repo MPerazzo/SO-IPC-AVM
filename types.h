@@ -9,6 +9,9 @@
 
 #define MSG_LEN 20
 
+/* ocpcodes */
+#define END_OF_CONNECTION 1
+
 typedef enum { false, true } bool;
 
 /* data related to AVM application */
@@ -16,7 +19,6 @@ typedef struct __attribute__((__packed__)) {
 
 	int code;
 
-	/* response of server */
 	char message[MSG_LEN];
 
 	/* testing data */
@@ -24,9 +26,8 @@ typedef struct __attribute__((__packed__)) {
 } AVMData;
 
 typedef struct __attribute__((__packed__)) {
-	int size;
+	int sender_pid;
 	int opcode;
-	int client_pid;
 	AVMData avmdata;
 } Data;
 
