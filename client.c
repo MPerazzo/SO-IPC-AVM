@@ -7,44 +7,108 @@
 #include "types.h"
 #include "comm.h"
 
+#define END_SESSION 0
+#define USER_LOGIN 1
+#define PLAY_GAME 2
+#define TESTING 100
 
-int main(int argc, char *argv[]) {
+#define BUFFERSIZE 100
 
-    int counter = 0;
-    Data * data;
-    Data * serverResponse;
-    Connection * connection;
-    char * address = "/tmp/listener";
+void run_session();
+void user_login();
+void play_game();
+void testing();
 
-    data = malloc(sizeof(Data));
-    data->size = sizeof(Data);
-    data->client_pid = getpid();
+char user_input[BUFFERSIZE];
 
-    /*        */printf("[client] connecting to server on address %s\n", address);
+int session_state;
 
-    connection = comm_connect(address);
+Connection * connection;
+Data * data_from_server;
+Data * data_to_send;
 
-    /*        */printf("[client] connection established. sending data\n");
+void main(int argc, char *argv[]) {
 
-    while(counter < 200) {
+    printf("[client] connecting to server on address %s\n", CONNECTION_ADDRESS);
 
-	sleep(1);
+    connection = comm_connect(CONNECTION_ADDRESS);
 
-        data->opcode = counter;
+    printf("[client] connection established\n");
 
-        sendData(connection, data);
+    run_session();
 
-        /*        */printf("[client] sent counter = %d\n", counter);
-
-        serverResponse = receiveData(connection);
-
-	counter = serverResponse->opcode;
-
-        /*        */printf("[client] received counter = %d\n", counter);
-
-	counter += 5;
-    }
-
-    /*        */printf("[client] done\n");
+    printf("[client] session done\n");
 
 }
+
+void run_session() {
+
+    session_state = TESTING;
+
+    while(1) {
+
+        if(session_state == END_SESSION) {
+
+            sendData(connection, newData(END_OF_CONNECTION));
+
+            comm_disconnect(connection);
+
+            return ;
+
+        } else if(session_state == USER_LOGIN) {
+
+            user_login();
+
+        } else if(session_state == PLAY_GAME) {
+
+            play_game();
+
+        } else if(session_state == TESTING) {
+
+            testing();
+
+        }
+
+    }
+
+}
+
+void user_login() {
+
+
+
+}
+
+void play_game() {
+
+
+
+}
+
+void testing() {
+
+    while(1) {
+
+	printf("[client] enter message to server (\"quit\" to quit): ");
+
+	fgets(user_input, BUFFERSIZE, stdin);
+
+        if(strcmp(user_input, "quit\n") == 0) {
+
+            session_state = END_SESSION;
+
+            return ;
+
+        } else {
+
+            data_to_send = newData(TEST_MESSAGE_STRING);
+
+            strcpy(data_to_send->avmdata.message, user_input);
+
+            sendData(connection, data_to_send);
+    
+        }
+
+    }
+}
+

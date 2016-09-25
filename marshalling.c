@@ -60,3 +60,15 @@ Data * receiveData(Connection * connection) {
 	return data;
 
 }
+
+Data * newData(Opcode opcode) {
+
+	Data * data;
+	
+	data = malloc(sizeof(Data));
+
+	data->opcode = opcode;
+
+	return data;
+
+}

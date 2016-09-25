@@ -7,17 +7,15 @@
 
 void newSession(Connection *);
 
-
 int main(int argc, char *argv[])
 {
 	int newpid;
 	Listener * listener;
 	Connection * connection;
-	char * address = "/tmp/listener";
 
-	listener = comm_listen(address);
+	listener = comm_listen(CONNECTION_ADDRESS);
 
-	/*        */printf("[server] awaiting connection requests\n");
+	printf("[server] awaiting connection requests\n");
 
 	while(1) {
 
@@ -39,31 +37,33 @@ int main(int argc, char *argv[])
 
 void newSession(Connection * connection) {
 
-	int counter = 0;	
-	
-	Data * data;
+	Data * data_from_client;
+	Data * data_to_send;
 
-	/*        */printf("[session %d] new client session started\n", getpid());
+	printf("[session %d] new client session started\n", getpid());
 
+	while(1) {
 
-	while(counter < 190) {
+		data_from_client = receiveData(connection);
 
-		data = receiveData(connection);
+		if(data_from_client->opcode == END_OF_CONNECTION) {
 
-		counter = data->opcode;
+			comm_disconnect(connection);
 
-		/*        */printf("[session %d] received counter = %d\n", getpid(), counter);
+			printf("[session %d] session ended remotely\n", getpid());
 
-		counter += 5;
+			break;
 
-		data->opcode = counter;
+		} else if(data_from_client->opcode == TEST_MESSAGE_STRING) {
 
-		/*        */printf("[session %d] sending counter = %d\n", getpid(), counter);
+			printf("[session %d] received message: %s", getpid(), data_from_client->avmdata.message);
 
-		sendData(connection, data);
+		} else {
+
+			printf("[session %d] error: unknown operation requested\n", getpid());
+
+		}
 
 	}
-
-	/*        */printf("[session %d] session done\n", getpid());
 
 }

@@ -7,10 +7,15 @@
 #ifndef _DATAGRAM_H
 #define _DATAGRAM_H
 
+#define CONNECTION_ADDRESS "/tmp/listening_channel"
+
 #define MSG_LEN 20
 
 /* ocpcodes */
-#define END_OF_CONNECTION 1
+#define END_OF_CONNECTION 1 
+#define TEST_MESSAGE_STRING 100
+
+typedef int Opcode; 
 
 typedef enum { false, true } bool;
 
@@ -27,7 +32,7 @@ typedef struct __attribute__((__packed__)) {
 
 typedef struct __attribute__((__packed__)) {
 	int sender_pid;
-	int opcode;
+	Opcode opcode;
 	AVMData avmdata;
 } Data;
 
