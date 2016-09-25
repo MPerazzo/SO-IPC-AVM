@@ -100,8 +100,6 @@ int comm_read(Connection * connection, char * dataToRead, int size) {
 
 int comm_disconnect(Connection * connection) {
 
-    close(connection->socket_descriptor);
-
-    return 0;
+    return close(connection->socket_descriptor);
 
 }
