@@ -7,8 +7,6 @@
 #define ERROR_TYPE 3
 #define MESSAGE_TYPES 3
 
-typedef enum { false, true } bool;
-
 typedef struct
 {
 	long mtype;

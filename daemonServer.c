@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "daemon.h"
+#include "types.h"
 
 int main () {
 
@@ -13,7 +15,9 @@ int main () {
 		
 		rcvMessage(0);
 		
-		printMessage(1);
+		bool daemonSrv = true;
+		
+		printMessage(daemonSrv);
 		
 		_clearmsg();
 	}

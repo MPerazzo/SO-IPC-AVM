@@ -39,21 +39,28 @@ Connection * comm_connect(char * address) {
     ConnectionRequest connectionRequest;
     Connection * connection;
 
-    connection = malloc(sizeof(Connection));
-
     connectionRequest.requester_pid = getpid();
 
     sprintf(client_incoming, "/tmp/client_%d_incoming", connectionRequest.requester_pid);
     sprintf(client_outgoing, "/tmp/client_%d_outgoing", connectionRequest.requester_pid);
 
-    mknod(client_incoming, S_IFIFO | 0666, 0);
-    mknod(client_outgoing, S_IFIFO | 0666, 0);
+    if (mknod(client_incoming, S_IFIFO | 0666, 0) == -1) {
+      perror("Couldn´t create client incoming named pipe. Error");
+      return NULL;
+    }
+    
+    if (mknod(client_outgoing, S_IFIFO | 0666, 0) == -1) {
+      perror("Couldn´t create client outgoing named pipe. Error");
+      return NULL;
+    }
 
     listener_fd = open(address, O_WRONLY);
 
     write(listener_fd, &connectionRequest, sizeof(ConnectionRequest));
 
     close(listener_fd);
+
+    connection = malloc(sizeof(Connection));
 
     connection->incoming_fd = open(client_incoming, O_RDONLY);
     connection->outgoing_fd = open(client_outgoing, O_WRONLY);
@@ -70,7 +77,10 @@ Listener * comm_listen(char * address) {
 
     unlink(address);
 
-    mknod(address, S_IFIFO | 0666, 0);
+    if (mknod(address, S_IFIFO | 0666, 0) == -1) {
+      perror("Couldn´t create server private named pipe. Error");
+      return NULL;
+    }
 
     strcpy(listener->address, address);
 
@@ -91,7 +101,7 @@ Connection * comm_accept(Listener * listener) {
 
     read(listener_fd, &connectionRequest, sizeof(ConnectionRequest));
 
-    close(listener->address);
+    close(atoi(listener->address));
 
     sprintf(client_incoming, "/tmp/client_%d_incoming", connectionRequest.requester_pid);
     sprintf(client_outgoing, "/tmp/client_%d_outgoing", connectionRequest.requester_pid);

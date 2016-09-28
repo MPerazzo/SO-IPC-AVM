@@ -1,6 +1,8 @@
 #ifndef _COMMUNICATION_H
 #define _COMMUNICATION_H
 
+#define MAXQ_SIZE 5
+
 typedef struct Connection Connection;
 
 typedef struct Listener Listener;

@@ -28,15 +28,22 @@ Connection * comm_connect(char * address) {
     struct sockaddr_un remote;
     Connection * connection;
 
-    connection = malloc(sizeof(Connection));
-
     remote.sun_family = AF_UNIX;
     strcpy(remote.sun_path, address);
     len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 
-    socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if ((socket_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+        perror("Couldn´t create socket. Error");
+        return NULL;
+    }
 
-    connect(socket_fd, (struct sockaddr *)&remote, len);
+    if ((connect(socket_fd, (struct sockaddr *)&remote, len)) == -1) {
+        close(socket_fd);
+        perror("Couldn´t connect to server. Error");
+        return NULL;
+    }
+
+    connection = malloc(sizeof(Connection));
 
     connection->socket_descriptor = socket_fd;
 
@@ -50,19 +57,32 @@ Listener * comm_listen(char * address) {
     struct sockaddr_un local;
     Listener * listener;
 
-    listener = malloc(sizeof(Listener));
-
     local.sun_family = AF_UNIX;
     strcpy(local.sun_path, address);
     len = strlen(local.sun_path) + sizeof(local.sun_family);
 
-    listener->listener_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if ((socket_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1){
+        perror("Couldn´t create socket. Error");
+        return NULL;
+    }
 
     unlink(local.sun_path);
 
-    bind(listener->listener_fd, (struct sockaddr *)&local, len);
+    if (bind(socket_fd, (struct sockaddr *)&local, len) == -1) {
+        close(socket_fd);
+        perror("Bind failed. Error");
+        return NULL;
+    }
 
-    listen(listener->listener_fd, 5);
+    if (listen(socket_fd, MAXQ_SIZE) == -1) {
+        close(socket_fd);
+        perror("Listen failed. Error");
+        return NULL;
+    }
+
+    listener = malloc(sizeof(Listener));
+
+    listener->listener_fd = socket_fd;
 
     return listener;
 
@@ -74,11 +94,14 @@ Connection * comm_accept(Listener * listener) {
     struct sockaddr_un remote;
     Connection * connection;
 
-    connection = malloc(sizeof(Connection));
-
     len = sizeof(struct sockaddr_un);
 
-    socket_fd = accept(listener->listener_fd, &remote, &len);
+    if ((socket_fd = accept(listener->listener_fd,  (struct sockaddr *)&remote, (socklen_t*)&len)) == -1) {
+        perror("Couldn´t accept connection from listener. Error");
+        return NULL;
+    }
+
+    connection = malloc(sizeof(Connection));
 
     connection->socket_descriptor = socket_fd;
 

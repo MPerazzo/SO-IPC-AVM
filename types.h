@@ -4,8 +4,8 @@
 3 - Client and server should be executed by CPU´s of same arquitecture.
 */
 
-#ifndef _DATAGRAM_H
-#define _DATAGRAM_H
+#ifndef _TYPES_H
+#define _TYPES_H
 
 #define CONNECTION_ADDRESS "/tmp/listening_channel"
 
@@ -15,7 +15,7 @@
 #define END_OF_CONNECTION 1 
 #define TEST_MESSAGE_STRING 100
 
-typedef int Opcode; 
+typedef int Opcode;
 
 typedef enum { false, true } bool;
 

@@ -12,7 +12,9 @@ mtype:
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #include "daemon.h"
+#include "types.h"
 
 void _clearmsg();
 
@@ -116,5 +118,5 @@ char * typetoString(long type) {
 
  void printMessage(bool is_logsrv) {
 	char * string = (is_logsrv==0)?"Deamon":"Server";
-	printf("%s .\nDesciption : Message type %s, received from %s pid : %d\n", msg.mdata, typetoString(msg.mtype), string, msg.svpid);
+	printf("Message from server is %s .\nDesciption : Message type %s, received from %s pid : %d\n", msg.mdata, typetoString(msg.mtype), string, msg.svpid);
 }

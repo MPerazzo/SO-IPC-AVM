@@ -34,7 +34,7 @@ Data * unmarshall(Datagram * datagram) {
 
 }
 
-void sendData(Connection * connection, Data * data) {
+int sendData(Connection * connection, Data * data) {
 
 	Datagram * datagram;
 
@@ -42,7 +42,7 @@ void sendData(Connection * connection, Data * data) {
 
 	datagram = marshall(data);
 
-	comm_write(connection, datagram->payload, sizeof(Data));
+	return comm_write(connection, datagram->payload, sizeof(Data));
 }
 
 Data * receiveData(Connection * connection) {
@@ -53,7 +53,8 @@ Data * receiveData(Connection * connection) {
 	datagram = malloc(sizeof(Datagram));
 	datagram->payload = malloc(sizeof(Data));
 
-	comm_read(connection, datagram->payload, sizeof(Data));
+	if (comm_read(connection, datagram->payload, sizeof(Data))<0)
+		return NULL;
 
 	data = unmarshall(datagram);
 

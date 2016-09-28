@@ -6,22 +6,24 @@
 
 #include "types.h"
 #include "comm.h"
+#include "states.h"
 
-#define END_SESSION 0
-#define USER_LOGIN 1
-#define PLAY_GAME 2
-#define TESTING 100
-
-#define BUFFERSIZE 100
-
+void connect();
+void clt_sigRutine(int);
 void run_session();
 void user_login();
 void play_game();
 void testing();
+void client_close();
+
+Data * newData(Opcode);
+
 
 char user_input[BUFFERSIZE];
 
 int session_state;
+
+bool connected;
 
 Connection * connection;
 Data * data_from_server;
@@ -29,9 +31,18 @@ Data * data_to_send;
 
 void main(int argc, char *argv[]) {
 
-    printf("[client] connecting to server on address %s\n", CONNECTION_ADDRESS);
+    connected=false;
+
+    signal(SIGINT, clt_sigRutine);
+
+    printf("[client] tying to connect to server on address %s\n", CONNECTION_ADDRESS);
 
     connection = comm_connect(CONNECTION_ADDRESS);
+
+    if (connection==NULL)
+        exit(1);
+
+    connected=true;
 
     printf("[client] connection established\n");
 
@@ -51,7 +62,7 @@ void run_session() {
 
             sendData(connection, newData(END_OF_CONNECTION));
 
-            comm_disconnect(connection);
+            client_close();
 
             return ;
 
@@ -87,8 +98,6 @@ void play_game() {
 
 void testing() {
 
-    while(1) {
-
 	printf("[client] enter message to server (\"quit\" to quit): ");
 
 	fgets(user_input, BUFFERSIZE, stdin);
@@ -108,7 +117,23 @@ void testing() {
             sendData(connection, data_to_send);
     
         }
+}
 
+void client_close() {
+    if (connected) {
+        comm_disconnect(connection);
+        free(connection);
     }
+}
+
+void clt_sigRutine(int sig) {
+    
+    //TODO: no deberia ser el mismo opcode que END_OF_CONNECTION , sino uno distinto. Para el handler de ese opcode usar kill en vez de exit¿?
+    sendData(connection, newData(CONNECTION_INTERRUMPED));
+    client_close();
+    
+    printf("\n");
+    printf("Client proccess with pid: %d terminated\n", getpid());
+    exit(1); 
 }
 
