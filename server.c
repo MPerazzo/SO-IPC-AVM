@@ -14,6 +14,7 @@ void initDB_calls();
 void newSession(Connection *);
 void server_close();
 
+char * getadress();
 Data * receiveData(Connection *);
 
 Listener * listener;
@@ -32,7 +33,9 @@ int main(int argc, char *argv[])
     
     initDB_calls();
 
-	listener = comm_listen(CONNECTION_ADDRESS);
+    char * address = getadress();
+
+	listener = comm_listen(address);
 
 	if (listener==NULL) {
 		sndMessage("Couldn´t create listener", ERROR_TYPE);

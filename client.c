@@ -16,8 +16,8 @@ void play_game();
 void testing();
 void client_close();
 
+char * getadress();
 Data * newData(Opcode);
-
 
 char user_input[BUFFERSIZE];
 
@@ -35,9 +35,11 @@ void main(int argc, char *argv[]) {
 
     signal(SIGINT, clt_sigRutine);
 
-    printf("[client] tying to connect to server on address %s\n", CONNECTION_ADDRESS);
+    char * address = getadress();
 
-    connection = comm_connect(CONNECTION_ADDRESS);
+    printf("[client] tying to connect to server on address %s\n", address);
+
+    connection = comm_connect(address);
 
     if (connection==NULL)
         exit(1);

@@ -7,12 +7,13 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 
-#define CONNECTION_ADDRESS "/tmp/listening_channel"
-
-#define MSG_LEN 20
+#define MSG_LEN 50
+#define BUFFERSIZE 100
+#define MAXQ_SIZE 5
 
 /* ocpcodes */
-#define END_OF_CONNECTION 1 
+#define END_OF_CONNECTION 1
+#define CONNECTION_INTERRUMPED 3
 #define TEST_MESSAGE_STRING 100
 
 typedef int Opcode;

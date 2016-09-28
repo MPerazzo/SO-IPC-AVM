@@ -121,5 +121,5 @@ char * typetoString(long type) {
 
  void printMessage() {
 	char * string = (is_dSrv==0)?"Deamon":"Server";
-	printf("Message from server is : %s .\nDesciption : Message type %s, received from %s pid : %d\n\n", msg.mdata, typetoString(msg.mtype), string, msg.svpid);
+	printf("Message from server is : %s.\nDesciption : Message type %s, received from %s pid : %d\n\n", msg.mdata, typetoString(msg.mtype), string, msg.svpid);
 }
