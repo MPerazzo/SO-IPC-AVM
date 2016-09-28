@@ -19,17 +19,20 @@ mtype:
 void _clearmsg();
 
 int qmessage_in, qmessage_out;
-bool is_loggingServ;
+bool is_dSrv;
 key_t k_in, k_out;
 
 Message msg;
 
-int initLogin(bool is_logsrv) {
+int initLogin(bool is_daemonSrv) {
 
-	switch (is_logsrv) {
+	is_dSrv = is_daemonSrv;
 
-	case true:
+	switch (is_dSrv) {
+
+	case true: {
 		return logsv_initLogin();
+	}
 		
 
 	case false:
@@ -116,7 +119,7 @@ char * typetoString(long type) {
 	return strings[type-1];
 }
 
- void printMessage(bool is_logsrv) {
-	char * string = (is_logsrv==0)?"Deamon":"Server";
-	printf("Message from server is %s .\nDesciption : Message type %s, received from %s pid : %d\n", msg.mdata, typetoString(msg.mtype), string, msg.svpid);
+ void printMessage() {
+	char * string = (is_dSrv==0)?"Deamon":"Server";
+	printf("Message from server is : %s .\nDesciption : Message type %s, received from %s pid : %d\n\n", msg.mdata, typetoString(msg.mtype), string, msg.svpid);
 }

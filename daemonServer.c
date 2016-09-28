@@ -14,10 +14,8 @@ int main () {
 	while (1) {
 		
 		rcvMessage(0);
-		
-		bool daemonSrv = true;
-		
-		printMessage(daemonSrv);
+				
+		printMessage();
 		
 		_clearmsg();
 	}
