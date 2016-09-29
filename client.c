@@ -116,7 +116,8 @@ void testing() {
 
             strcpy(data_to_send->avmdata.message, user_input);
 
-            sendData(connection, data_to_send);
+            if (sendData(connection, data_to_send)<0)
+                printf("Connection to server has been lost\n");
     
         }
 }
@@ -130,12 +131,11 @@ void client_close() {
 
 void clt_sigRutine(int sig) {
     
-    //TODO: no deberia ser el mismo opcode que END_OF_CONNECTION , sino uno distinto. Para el handler de ese opcode usar kill en vez de exit¿?
     sendData(connection, newData(CONNECTION_INTERRUMPED));
+    
     client_close();
     
     printf("\n");
     printf("Client proccess with pid: %d terminated\n", getpid());
     exit(1); 
 }
-

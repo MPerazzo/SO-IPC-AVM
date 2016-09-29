@@ -15,6 +15,6 @@ http://www.thegeekstuff.com/2011/12/c-socket-programming/?utm_source=feedburner
 2- Client and server are executed from CPU´s of same arquitecture.
 3- Packing flag on structures is set to 0.
 
-*This implementation can stand multiple servers running as long as they dont have the same ports and IP assigned.
-
 *Logging Deamon implementation assigns same queue values to all the servers, so to know from which server the message is, a field containing the pid was added to the message struct.
+
+*Implementation of threading on serverThreading.c works up to 10 sessions, as the max length of the vector of threads was defined to be 10.

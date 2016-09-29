@@ -1,3 +1,10 @@
+/*
+mtype:
+		1-Info
+		2-Warning
+		3-Error
+*/
+
 #ifndef _DATAGRAM_H
 #define _DATAGRAM_H
 

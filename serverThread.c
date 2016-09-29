@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "types.h"
 #include "comm.h"
@@ -11,7 +12,7 @@
 
 void srv_sigRutine(int);
 void initDB_calls();
-void newSession(Connection *);
+void * newSession(void *);
 void server_close();
 
 char * getadress();
@@ -19,6 +20,10 @@ Data * receiveData(Connection *);
 
 Listener * listener;
 Connection * connection;
+
+int session;
+
+pthread_t thread_id[MAX_THREADS];
 
 int main(int argc, char *argv[])
 {
@@ -44,6 +49,10 @@ int main(int argc, char *argv[])
 
 	printf("[server] awaiting connection requests\n");
 
+	session=0;
+
+	int i =0;
+
 	while(1) {
 
 		connection = comm_accept(listener);
@@ -52,31 +61,26 @@ int main(int argc, char *argv[])
 			sndMessage("Couldn´t create connection from listener", ERROR_TYPE);
 			exit(1);
 		}
-
-		int newpid = fork();
-
-		if(newpid == 0) {
-
-			newSession(connection);
-
-			return 0;
 		
-		}
-
+		pthread_create(&thread_id[i++], NULL ,&newSession, connection );	
+		
 	}
-
 }
 
-void newSession(Connection * connection) {
+void * newSession(void * args) {
+
+	Connection * current_connection = (Connection *) args;
+
+	int current_session = ++session;
 
 	Data * data_from_client;
 	Data * data_to_send;
 
-	printf("[session %d] new client session started\n", getpid());
+	printf("[session %d] new client session started\n", current_session);
 
 	while (1) {
 
-		data_from_client = receiveData(connection);
+		data_from_client = receiveData(current_connection);
 
 		if (data_from_client == NULL) {
 			exit(1);
@@ -84,31 +88,31 @@ void newSession(Connection * connection) {
 
 		if(data_from_client->opcode == END_OF_CONNECTION) {
 
-			printf("[session %d] session ended, END_OF_CONNECTION opcode received\n", getpid());
+			printf("[session %d] session ended, END_OF_CONNECTION opcode received\n", current_session);
 
 			sndMessage("Server is logged out with no errors", INFO_TYPE);
 
-			server_close();
+			comm_disconnect(current_connection);
 
 			return;
 
 		}  else if(data_from_client->opcode == CONNECTION_INTERRUMPED) {
 
-			printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
+			printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", current_session);
 
 			sndMessage("Server is logged out by kill on client", WARNING_TYPE);
 
-			server_close();
+			comm_disconnect(current_connection);
 
 			return;
 
 		} else if(data_from_client->opcode == TEST_MESSAGE_STRING) {
 
-			printf("[session %d] received message: %s", getpid(), data_from_client->avmdata.message);
+			printf("[session %d] received message: %s", current_session, data_from_client->avmdata.message);
 
 		} else {
 
-			printf("[session %d] error: unknown operation requested\n", getpid());
+			printf("[session %d] error: unknown operation requested\n", current_session);
 
 		}
 	}
@@ -118,21 +122,18 @@ void initDB_calls() {
 
 }
 
-void server_close() {
-	free(connection);
-	comm_disconnect(connection);
-}
-
 void srv_sigRutine(int sig) {
 
     printf("\n");
     printf("Server proccess with pid: %d terminated\n", getpid());
 
     sndMessage("Server logged out by kill()", WARNING_TYPE);
-
-    free(listener);
-
-    server_close();
     
+	free(listener);
+
     exit(1);
+}
+
+void server_close() {
+	
 }

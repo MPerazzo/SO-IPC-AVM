@@ -10,6 +10,8 @@
 #define MSG_LEN 50
 #define BUFFERSIZE 100
 #define MAXQ_SIZE 5
+#define MAX_THREADS 10
+
 
 /* ocpcodes */
 #define END_OF_CONNECTION 1

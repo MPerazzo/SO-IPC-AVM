@@ -1,9 +1,3 @@
-/*
-mtype:
-		1-Info
-		2-Warning
-		3-Error
-*/
 
 #include <stdio.h>
 #include <sys/types.h>
