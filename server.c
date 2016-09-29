@@ -119,8 +119,8 @@ void initDB_calls() {
 }
 
 void server_close() {
-	free(connection);
 	comm_disconnect(connection);
+	free(connection);
 }
 
 void srv_sigRutine(int sig) {

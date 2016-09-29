@@ -14,6 +14,7 @@ void srv_sigRutine(int);
 void initDB_calls();
 void * newSession(void *);
 void server_close();
+void current_close(Connection *);
 
 char * getadress();
 Data * receiveData(Connection *);
@@ -92,8 +93,8 @@ void * newSession(void * args) {
 
 			sndMessage("Server is logged out with no errors", INFO_TYPE);
 
-			comm_disconnect(current_connection);
-
+			current_close(current_connection);
+			
 			return;
 
 		}  else if(data_from_client->opcode == CONNECTION_INTERRUMPED) {
@@ -102,7 +103,7 @@ void * newSession(void * args) {
 
 			sndMessage("Server is logged out by kill on client", WARNING_TYPE);
 
-			comm_disconnect(current_connection);
+			current_close(current_connection);
 
 			return;
 
@@ -136,4 +137,10 @@ void srv_sigRutine(int sig) {
 
 void server_close() {
 	
+}
+
+void current_close(Connection * current_connection) {
+	
+	comm_disconnect(current_connection);
+	free(current_connection);
 }
