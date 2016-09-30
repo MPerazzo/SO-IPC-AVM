@@ -7,7 +7,7 @@
 #include "types.h"
 #include "comm.h"
 #include "daemon.h"
-#include "states.h"
+#include "constants.h"
 
 void srv_sigRutine(int);
 void initDB_calls();
@@ -71,7 +71,8 @@ void newSession(Connection * connection) {
 
 	Data * data_from_client;
 	Data * data_to_send;
-
+	Character characters[MAX_CHARACTERS];
+	User user;
 	printf("[session %d] new client session started\n", getpid());
 
 	while (1) {
@@ -82,7 +83,71 @@ void newSession(Connection * connection) {
 			exit(1);
 		}
 
-		if(data_from_client->opcode == END_OF_CONNECTION) {
+		if(data_from_client->opcode == LOGIN) {
+
+			if(strcmp(user.account, data_from_client->avmdata.user.account) == 0 && strcmp(user.password, data_from_client->avmdata.user.password) == 0) {
+				data_to_send = newData(NO_ERR);
+			} else {
+				data_to_send = newData(ERR_PARAMETER);
+			}
+			sendData(connection, data_to_send);
+
+		} else if(data_from_client->opcode == CREATE_ACCOUNT) {
+			strcpy(user.account, data_from_client->avmdata.user.account);
+			strcpy(user.password, data_from_client->avmdata.user.password);
+
+			data_to_send = newData(NO_ERR);
+
+        	sendData(connection, data_to_send);
+
+		} else if(data_from_client->opcode == SELECT_CHARACTER) {
+			int i, flag = 0;
+			for(i = 0 ; i < MAX_CHARACTERS ; i++) {
+				if(strcmp(characters[i].name, data_from_client->avmdata.charSelected.name) == 0) {
+					flag = 1;
+					data_to_send = newData(NO_ERR);
+					strcpy(data_to_send->avmdata.charSelected.name, characters[i].name);
+					data_to_send->avmdata.charSelected.lvl = characters[i].lvl;
+					data_to_send->avmdata.charSelected.totalExp = characters[i].totalExp;
+					data_to_send->avmdata.charSelected.currentExp = characters[i].currentExp;
+				}
+			}
+			if(!flag) {
+				data_to_send = newData(ERR_PARAMETER);
+			}
+			sendData(connection, data_to_send);
+
+		} else if(data_from_client->opcode == CREATE_CHARACTER) {
+			strcpy(characters[1].name, data_from_client->avmdata.charSelected.name);
+			characters[1].lvl = 1;
+			characters[1].totalExp = 10;
+			data_to_send = newData(NO_ERR);
+
+        	sendData(connection, data_to_send);
+		} else if(data_from_client->opcode == SHOW_CHARACTER) {
+
+		} else if(data_from_client->opcode == EXIT_GAME) {
+			data_to_send = newData(NO_ERR);
+
+        	sendData(connection, data_to_send);
+		} else if(data_from_client->opcode == EXIT_GAME_SAVE) {
+			data_to_send = newData(NO_ERR);
+
+        	sendData(connection, data_to_send);
+		} else if(data_from_client->opcode == LOGOUT) {
+
+		} else if(data_from_client->opcode == LOGOUT_SAVE) {
+
+		} else if(data_from_client->opcode == SAVE_STATS) {
+			characters[1].lvl = data_from_client->avmdata.charSelected.lvl;
+			characters[1].totalExp = data_from_client->avmdata.charSelected.totalExp;
+			characters[1].currentExp = data_from_client->avmdata.charSelected.currentExp;
+			printf("CHARACTER: name:%s lvl:%d exp: %d/%d\n", characters[1].name, characters[1].lvl, characters[1].totalExp, characters[1].currentExp);
+
+			data_to_send = newData(NO_ERR);
+
+        	sendData(connection, data_to_send);
+		} else if(data_from_client->opcode == END_OF_CONNECTION) {
 
 			printf("[session %d] session ended, END_OF_CONNECTION opcode received\n", getpid());
 
@@ -101,10 +166,6 @@ void newSession(Connection * connection) {
 			server_close();
 
 			return;
-
-		} else if(data_from_client->opcode == TEST_MESSAGE_STRING) {
-
-			printf("[session %d] received message: %s", getpid(), data_from_client->avmdata.message);
 
 		} else {
 

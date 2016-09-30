@@ -8,29 +8,36 @@
 #define _TYPES_H
 
 #define MSG_LEN 50
-#define BUFFERSIZE 100
+#define BUFFERSIZE 200
 #define MAXQ_SIZE 5
 #define MAX_THREADS 10
+#define MAX_CHARACTERS 5
+#define SIZE 20
 
-
-/* ocpcodes */
-#define END_OF_CONNECTION 1
-#define CONNECTION_INTERRUMPED 3
-#define TEST_MESSAGE_STRING 100
 
 typedef int Opcode;
 
 typedef enum { false, true } bool;
 
+typedef struct {
+		char name[SIZE];
+		int lvl;
+		int totalExp;
+		int currentExp;
+} Character;
+
+typedef struct {
+		char account[SIZE];
+		char password[SIZE];
+} User;
+
 /* data related to AVM application */
 typedef struct __attribute__((__packed__)) {
-
-	int code;
-
+	Character characters[MAX_CHARACTERS];
+	User user;
+	int cantCharacters;
+	Character charSelected;
 	char message[MSG_LEN];
-
-	/* testing data */
-	int number;
 } AVMData;
 
 typedef struct __attribute__((__packed__)) {
