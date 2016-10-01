@@ -16,12 +16,17 @@ void server_close();
 
 char * getadress();
 Data * receiveData(Connection *);
+Data * newData(Opcode opcode);
+
+bool connected_toclt;
 
 Listener * listener;
 Connection * connection;
 
 int main(int argc, char *argv[])
 {
+	connected_toclt = false;
+
 	signal(SIGINT, srv_sigRutine);
 
 	if ( initLogin(false) == -1 ) {
@@ -53,9 +58,14 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
+		connected_toclt = true;
+
 		int newpid = fork();
 
 		if(newpid == 0) {
+
+			sndMessage("New connection", INFO_TYPE);
+
 
 			newSession(connection);
 
@@ -85,6 +95,9 @@ void newSession(Connection * connection) {
 
 		if(data_from_client->opcode == LOGIN) {
 
+			sndMessage("New login", INFO_TYPE);
+
+
 			if(strcmp(user.account, data_from_client->avmdata.user.account) == 0 && strcmp(user.password, data_from_client->avmdata.user.password) == 0) {
 				data_to_send = newData(NO_ERR);
 			} else {
@@ -93,6 +106,9 @@ void newSession(Connection * connection) {
 			sendData(connection, data_to_send);
 
 		} else if(data_from_client->opcode == CREATE_ACCOUNT) {
+
+			sndMessage("Account created", INFO_TYPE);
+
 			strcpy(user.account, data_from_client->avmdata.user.account);
 			strcpy(user.password, data_from_client->avmdata.user.password);
 
@@ -180,8 +196,10 @@ void initDB_calls() {
 }
 
 void server_close() {
-	comm_disconnect(connection);
-	free(connection);
+	if (connected_toclt == true) {
+		comm_disconnect(connection);
+		free(connection);
+	}
 }
 
 void srv_sigRutine(int sig) {

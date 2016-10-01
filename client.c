@@ -12,6 +12,8 @@ void connect();
 void clt_sigRutine(int);
 void run_session();
 void client_close();
+char * getadress();
+Data * receiveData(Connection * connection);
 
 void loadCommands();
 void parser(char * , int);
