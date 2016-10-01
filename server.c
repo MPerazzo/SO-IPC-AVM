@@ -14,7 +14,7 @@ void initDB_calls();
 void newSession(Connection *);
 void server_close();
 
-char * getadress();
+char * getaddress();
 Data * receiveData(Connection *);
 Data * newData(Opcode opcode);
 
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     
     initDB_calls();
 
-    char * address = getadress();
+    char * address = getaddress();
 
 	listener = comm_listen(address);
 

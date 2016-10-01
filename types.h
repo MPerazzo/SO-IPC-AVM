@@ -7,13 +7,7 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 
-#define MSG_LEN 50
-#define BUFFERSIZE 200
-#define MAXQ_SIZE 5
-#define MAX_THREADS 10
-#define MAX_CHARACTERS 5
-#define SIZE 20
-
+#include "constants.h"
 
 typedef int Opcode;
 

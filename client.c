@@ -12,7 +12,7 @@ void connect();
 void clt_sigRutine(int);
 void run_session();
 void client_close();
-char * getadress();
+char * getaddress();
 Data * receiveData(Connection * connection);
 
 void loadCommands();
@@ -68,7 +68,7 @@ void main(int argc, char *argv[]) {
 
     signal(SIGINT, clt_sigRutine);
 
-    char * address = getadress();
+    char * address = getaddress();
 
     printf("[client] tying to connect to server on address %s\n", address);
 

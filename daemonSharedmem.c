@@ -53,7 +53,7 @@ int initLogin(bool is_daemonSrv) {
 
 	is_dSrv = is_daemonSrv;
 
-	shm_key = 0XCCCC0;
+	shm_key = getkey("SHM");
 
 	switch (is_dSrv) {
 

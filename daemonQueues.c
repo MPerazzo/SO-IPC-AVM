@@ -55,16 +55,16 @@ int initLogin(bool is_daemonSrv) {
 
 int dSrv_initLogin() {
 
-	k_in = 0xBBBB0;
-	k_out = 0XBBBB1;
+	k_in = getkey("Q1");
+	k_out = getkey("Q2");
 
 	return create_queue();
 }
 
 int other_initLogin() {
 
-	k_in = 0XBBBB1;
-	k_out = 0xBBBB0;
+	k_in = getkey("Q2");
+	k_out = getkey("Q1");
 
 	return create_queue();
 }
