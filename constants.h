@@ -37,11 +37,20 @@
 #define END_OF_CONNECTION 200
 #define CONNECTION_INTERRUMPED 300
 
-/*length*/
+/*length or sizes*/
 #define CANT_ARGS 5
 #define COMM_SIZE 11
 #define STATES 6
 #define BLOCK 10
 #define LEVEL_MAX 10
+#define MSG_LEN 50
+#define BUFFERSIZE 200
+#define MAXQ_SIZE 5
+#define MAX_THREADS 10
+#define MAX_CHARACTERS 5
+#define SIZE 20
+#define KEY_LENGTH 3
+#define BUFF_SIZE 20
+
 
 #endif

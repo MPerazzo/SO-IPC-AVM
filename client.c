@@ -70,7 +70,7 @@ void main(int argc, char *argv[]) {
 
     char * address = getaddress();
 
-    printf("[client] tying to connect to server on address %s\n", address);
+    printf("[client] trying to connect to server on address %s\n", address);
 
     connection = comm_connect(address);
 
@@ -79,7 +79,7 @@ void main(int argc, char *argv[]) {
 
     connected=true;
 
-    printf("[client] connection established\n");
+    printf("[client] connection established. Write help to see commands.\n");
 
     run_session();
 
@@ -94,7 +94,7 @@ void run_session() {
     loadCommands();
 
     while(1) {
-        printf("/:");
+        printf(">>");
         fgets(user_input, BUFFERSIZE, stdin);
         parser(user_input, session_state);
 
@@ -218,7 +218,7 @@ void parser(char * buffer, int state) {
 
     cant = splitArgs(buffer, args, CANT_ARGS);
     if(cant < 0) {
-        printf("Error: command incorrect, typing help to see the different commands.\n");
+        printf("Error: command incorrect, write help to see the different commands.\n");
         return;
     }
     for(i = 0 ; !flag && i < COMM_SIZE ; i++) {
@@ -226,14 +226,14 @@ void parser(char * buffer, int state) {
         if(!strcmp(args[0], commands[i].name)) {
             flag = 1;
             if(!commands[i].actionOnState[state]) {
-                printf("Error: you can not use that command in this state, typing help to see the different commands.\n");
+                printf("Error: you can not use that command in this state of the game, write help to see the different commands.\n");
                 
                 return;
             }else if ((cant - 1) != commands[i].cantArgs) {
-                printf("Error: incorrect amount of arguments, typing help to see the different commands.\n");
+                printf("Error: incorrect amount of arguments, write help to see the different commands.\n");
                 return;
             } else {
-                convertArg(args, commands[i].typeArgs, commands[i].cantArgs);
+                //convertArg(args, commands[i].typeArgs, commands[i].cantArgs);
                 switch (commands[i].cantArgs) {
                 case 0:
                     commands[i].function();
@@ -249,7 +249,7 @@ void parser(char * buffer, int state) {
         }
     }
     if(!flag) {
-        printf("Error: command incorrect, typing help to see the different commands.\n");
+        printf("Error: command incorrect, write help to see the different commands.\n");
     }
 }
 
@@ -308,25 +308,11 @@ char * strCpy(char * str) {
     aux[i] = 0;
     return aux;
 }
-            
-int convertArg(char ** args, char * argTypes, int cant) {
-    int  j;
-    for (j = 1 ; j <= cant ; j++) {
-        switch (argTypes[j - 1]) {
-        case INT:
-            args[j] = atoi(args[j]);
-            break;
-        default:
-            break;
-        }
-    }
-}
-
 
 void login(char * account,char * password) {
 
     if(strlen(account) > SIZE || strlen(password) > SIZE) {
-        printf("Please, maximum twenty characters for your Username or Password.\n");
+        printf("Limit of characters exceeded. The maximum is twenty for your Username or Password.\n");
         return;
     }
 
@@ -352,7 +338,7 @@ void login(char * account,char * password) {
 void createAccount(char * account, char * password) {
     
     if(strlen(account) > SIZE || strlen(password) > SIZE) {
-        printf("Please, maximum twenty characters for your Username or Password.\n");
+        printf("Limit of characters exceeded. The maximum is twenty for your Username or Password.\n");
         return;
     }
 
@@ -375,7 +361,7 @@ void createAccount(char * account, char * password) {
 void selectCharacter(char * name) {
 
     if(strlen(name) > SIZE) {
-        printf("Please, maximum twenty characters.\n");
+        printf("Limit of characters exceeded. The maximum is twenty for your character name.\n");
         return;
     }
 
@@ -388,7 +374,7 @@ void selectCharacter(char * name) {
     data_from_server = receiveData(connection);
 
     if(data_from_server->opcode == ERR_PARAMETER){
-        printf("No character with that name.\n");
+        printf("No character exists with that name.\n");
     } if(data_from_server->opcode == NO_ERR) {
         session_state = PLAY_GAME;
         strcpy(character_in_game.name, data_from_server->avmdata.charSelected.name);
@@ -396,7 +382,7 @@ void selectCharacter(char * name) {
         character_in_game.totalExp = data_from_server->avmdata.charSelected.totalExp;
         character_in_game.currentExp = data_from_server->avmdata.charSelected.currentExp;
 
-        printf("Now you are playing.\n");
+        printf("Now you are playing. ENJOY!\n");
         help();
     }
 
@@ -405,7 +391,7 @@ void selectCharacter(char * name) {
 void createCharacter(char * name) {
 
     if(strlen(name) > SIZE) {
-        printf("Please, maximum twenty characters.\n");
+        printf("Limit of characters exceeded. The maximum is twenty for your character name.\n");
         return;
     }
     
@@ -421,7 +407,7 @@ void createCharacter(char * name) {
         if(data_from_server->avmdata.cantCharacters == MAX_CHARACTERS) {
             printf("You can not have more characters than 5\n");
         } else {
-            printf("That name already exist.\n");
+            printf("That name already exists.\n");
         }
     } if(data_from_server->opcode == NO_ERR) {
         printf("The character was created successfully.\n");
@@ -432,7 +418,7 @@ void createCharacter(char * name) {
 
 void deleteCharacter(char * name) {
     if(strlen(name) > SIZE) {
-        printf("Please, maximum twenty characters.\n");
+        printf("Limit of characters exceeded. The maximum is twenty for your character name.\n");
         return;
     }
 
@@ -445,10 +431,10 @@ void deleteCharacter(char * name) {
     data_from_server = receiveData(connection);
 
     if(data_from_server->opcode == ERR_PARAMETER){
-        printf("No character with that name.\n");
+        printf("No character exists with that name.\n");
     } if(data_from_server->opcode == NO_ERR) {
         session_state = PLAY_GAME;
-        printf("Now you are playing.\n");
+        printf("Now you are playing. ENJOY!\n");
         help();
     }
 }
@@ -504,6 +490,7 @@ void help() {
             printf("==============================================\n");
         }
     }
+    printf("Sintaxis to call a function is: name_function arg1 arg2 ... argN\n");
 }
 
 void logOut() {
