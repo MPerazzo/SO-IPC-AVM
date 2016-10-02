@@ -13,6 +13,8 @@ void clt_sigRutine(int);
 void run_session();
 void client_close();
 char * getaddress();
+
+Data * communicate(Connection * conn, Data * tosend);
 Data * receiveData(Connection * connection);
 
 void loadCommands();
@@ -32,6 +34,7 @@ void help();
 void logOut();
 void point();
 void getLevel();
+void freeData();
 
 Data * newData(Opcode);
 
@@ -112,24 +115,6 @@ void run_session() {
 
 }
 
-void client_close() {
-    if (connected) {
-        comm_disconnect(connection);
-        free(connection);
-    }
-}
-
-void clt_sigRutine(int sig) {
-    
-    //TODO: no deberia ser el mismo opcode que END_OF_CONNECTION , sino uno distinto. Para el handler de ese opcode usar kill en vez de exit¿?
-    sendData(connection, newData(CONNECTION_INTERRUMPED));
-    client_close();
-    
-    printf("\n");
-    printf("Client proccess with pid: %d terminated\n", getpid());
-    exit(1); 
-}
-
 void loadCommands() {
 
     commands[LOGIN].name = "login";
@@ -138,7 +123,7 @@ void loadCommands() {
     commands[LOGIN].typeArgs[1] = STRING;
     commands[LOGIN].cantArgs = 2;
     commands[LOGIN].actionOnState[USER_LOGIN] = 1;
-    strcpy(commands[LOGIN].description, "Parameters: [STRING]account [STRING]password\nDescription: You can start section.\n");
+    strcpy(commands[LOGIN].description, "Parameters: [STRING]account [STRING]password\nDescription: In order to play, you need to login.\n");
 
     commands[CREATE_ACCOUNT].name = "createAccount";
     commands[CREATE_ACCOUNT].function = (func)&createAccount;
@@ -196,7 +181,7 @@ void loadCommands() {
     commands[LOGOUT].cantArgs = 0;
     commands[LOGOUT].actionOnState[CHAR_SELECTION] = 1;
     commands[LOGOUT].actionOnState[PLAY_GAME] = 1;
-    strcpy(commands[LOGOUT].description, "No parameters\nDescription: Back to the lobby.\n");
+    strcpy(commands[LOGOUT].description, "No parameters\nDescription: Back to the lobby. There you can create an account, login, and others.\n");
 
     commands[POINT].name = "p";
     commands[POINT].function = (func)&point;
@@ -208,7 +193,7 @@ void loadCommands() {
     commands[GET_LEVEL].function = (func)&getLevel;
     commands[GET_LEVEL].cantArgs = 0;
     commands[GET_LEVEL].actionOnState[PLAY_GAME] = 1;
-    strcpy(commands[GET_LEVEL].description, "No parameters\nDescription: Show the level of character and totalExp/currentExp of this level.\n");
+    strcpy(commands[GET_LEVEL].description, "No parameters\nDescription: Show the level of character and the totalExp required for the next level. Also shows the currentExp.\n");
 }
 
 void parser(char * buffer, int state) {
@@ -233,7 +218,7 @@ void parser(char * buffer, int state) {
                 printf("Error: incorrect amount of arguments, write help to see the different commands.\n");
                 return;
             } else {
-                //convertArg(args, commands[i].typeArgs, commands[i].cantArgs);
+
                 switch (commands[i].cantArgs) {
                 case 0:
                     commands[i].function();
@@ -309,6 +294,23 @@ char * strCpy(char * str) {
     return aux;
 }
 
+void help() {
+    int i;
+
+    printf("\n");
+    printf("Sintaxis to call a function is: name_function arg1 arg2 ... argN\n");
+    printf("==============================================\n");
+
+    for (i = 0; i < COMM_SIZE; i++) {
+        if(commands[i].actionOnState[session_state]){
+            printf("==============================================\n");
+            printf("%s:\n", commands[i].name);
+            printf("%s", commands[i].description);
+            printf("==============================================\n");
+        }
+    }
+}
+
 void login(char * account,char * password) {
 
     if(strlen(account) > SIZE || strlen(password) > SIZE) {
@@ -323,16 +325,16 @@ void login(char * account,char * password) {
 
     sendData(connection, data_to_send);
 
-    data_from_server = receiveData(connection);
+    data_from_server = communicate(connection, data_to_send);
 
     if(data_from_server->opcode == ERR_PARAMETER) {
         printf("The Username or password is incorrect.\n");
     } else if(data_from_server->opcode == NO_ERR) {
         session_state = CHAR_SELECTION;
         printf("You are now logged.\n");
-        help();
     }
 
+    freeData();
 }
 
 void createAccount(char * account, char * password) {
@@ -347,15 +349,15 @@ void createAccount(char * account, char * password) {
     strcpy(data_to_send->avmdata.user.account, account);
     strcpy(data_to_send->avmdata.user.password, password);
 
-    sendData(connection, data_to_send);
-
-    data_from_server = receiveData(connection);
+    data_from_server = communicate(connection, data_to_send);
 
     if(data_from_server->opcode == ERR_PARAMETER){
         printf("Username already exist.\n");
     } if(data_from_server->opcode == NO_ERR) {
         printf("Your account been created successfully.\n");
     }
+
+    freeData();
 }
 
 void selectCharacter(char * name) {
@@ -371,6 +373,8 @@ void selectCharacter(char * name) {
 
     sendData(connection, data_to_send);
 
+
+
     data_from_server = receiveData(connection);
 
     if(data_from_server->opcode == ERR_PARAMETER){
@@ -382,10 +386,10 @@ void selectCharacter(char * name) {
         character_in_game.totalExp = data_from_server->avmdata.charSelected.totalExp;
         character_in_game.currentExp = data_from_server->avmdata.charSelected.currentExp;
 
-        printf("Now you are playing. ENJOY!\n");
-        help();
+        printf("Now you are playing. If you don´t know how to play use help. ENJOY!\n");
     }
 
+    freeData();
 }
 
 void createCharacter(char * name) {
@@ -399,9 +403,7 @@ void createCharacter(char * name) {
 
     strcpy(data_to_send->avmdata.charSelected.name, name);
 
-    sendData(connection, data_to_send);
-
-    data_from_server = receiveData(connection);
+    data_from_server = communicate(connection, data_to_send);
 
     if(data_from_server->opcode == ERR_PARAMETER){
         if(data_from_server->avmdata.cantCharacters == MAX_CHARACTERS) {
@@ -411,9 +413,9 @@ void createCharacter(char * name) {
         }
     } if(data_from_server->opcode == NO_ERR) {
         printf("The character was created successfully.\n");
-        //showCharacters();
     }
 
+    freeData();
 }
 
 void deleteCharacter(char * name) {
@@ -426,26 +428,23 @@ void deleteCharacter(char * name) {
 
     strcpy(data_to_send->avmdata.charSelected.name, name);
 
-    sendData(connection, data_to_send);
-
-    data_from_server = receiveData(connection);
+    data_from_server = communicate(connection, data_to_send);
 
     if(data_from_server->opcode == ERR_PARAMETER){
         printf("No character exists with that name.\n");
     } if(data_from_server->opcode == NO_ERR) {
-        session_state = PLAY_GAME;
-        printf("Now you are playing. ENJOY!\n");
-        help();
+        printf("The character %s has been deleted.\n", name);
     }
+
+    freeData();
 }
 
 void showCharacters() {
 
     data_to_send = newData(SHOW_CHARACTER);
 
-    sendData(connection, data_to_send);
+    data_from_server = communicate(connection, data_to_send);
 
-    data_from_server = receiveData(connection);
     if(data_from_server->avmdata.cantCharacters != 0) {
         int i;
         for(i = 0 ; i < MAX_CHARACTERS ; i++) {
@@ -457,7 +456,55 @@ void showCharacters() {
     } else {
         printf("You do not have characters\n");
     }
+
+    freeData();
+}
+
+void point() {
+
+    printf("Your exp is %d\n", character_in_game.currentExp);
+
+    printf("Your level is %d\n", character_in_game.lvl);
+
+    printf("Your totalExp is %d\n", character_in_game.totalExp);
     
+    if(character_in_game.currentExp++ == character_in_game.totalExp) {
+        if(character_in_game.lvl < LEVEL_MAX) {
+
+            character_in_game.lvl ++;
+            character_in_game.totalExp = levelsExp[character_in_game.lvl];
+            character_in_game.currentExp = 0;
+            printf("Congrats now %s is level %d \n",character_in_game.name, character_in_game.lvl);
+        } else {
+
+            printf("You are lvl MAX already. Go and fullfill your destiny\n");
+            return;
+        }
+
+    }
+    // Save character data in database in case connection is lost
+    if(counter == LIMIT_TOSAVE) {
+        
+        counter = 0;
+
+        data_to_send = newData(SAVE_STATS);
+
+        strcpy(data_to_send->avmdata.charSelected.name, character_in_game.name);
+        data_to_send->avmdata.charSelected.lvl = character_in_game.lvl;
+        data_to_send->avmdata.charSelected.totalExp = character_in_game.totalExp;
+        data_to_send->avmdata.charSelected.currentExp = character_in_game.currentExp;
+
+        sendData(connection, data_to_send);   
+
+        free(data_to_send);     
+
+    } else {
+        counter++;
+    }
+}
+
+void getLevel() {
+     printf("level: %d\t exp: %d/%d\n",character_in_game.lvl, character_in_game.currentExp, character_in_game.totalExp);
 }
 
 void exitGame() {
@@ -468,29 +515,17 @@ void exitGame() {
 
         sendData(connection, data_to_send);
 
-        data_from_server = receiveData(connection);
     } else {
+        
         data_to_send = newData(EXIT_GAME);
 
-        sendData(connection, data_to_send);
-
-        data_from_server = receiveData(connection); 
+        sendData(connection, data_to_send);; 
     }
+    printf("Thank you for playing. See you later :)\n");
+
+    free(data_to_send);
 
     session_state = END_SESSION;
-}
-
-void help() {
-    int i;
-    for (i = 0; i < COMM_SIZE; i++) {
-        if(commands[i].actionOnState[session_state]){
-            printf("==============================================\n");
-            printf("%s :\n", commands[i].name);
-            printf("%s", commands[i].description);
-            printf("==============================================\n");
-        }
-    }
-    printf("Sintaxis to call a function is: name_function arg1 arg2 ... argN\n");
 }
 
 void logOut() {
@@ -501,55 +536,64 @@ void logOut() {
 
         sendData(connection, data_to_send);
 
-        data_from_server = receiveData(connection);
     } else {
+        
         data_to_send = newData(LOGOUT);
 
         sendData(connection, data_to_send);
-
-        data_from_server = receiveData(connection); 
     }
+    printf("You have logged out successfully\n");
+
+    free(data_to_send);
 
     session_state = USER_LOGIN;
 }
 
-void point() {
+Data * communicate(Connection * conn, Data * tosend) {
     
-    character_in_game.currentExp++;
-    if(character_in_game.currentExp == character_in_game.totalExp) {
-        if(character_in_game.lvl < LEVEL_MAX) {
+    Data * data_received;
 
-            character_in_game.lvl ++;
-            character_in_game.totalExp = levelsExp[character_in_game.lvl - 1];
-            character_in_game.currentExp = 0;
-            printf("congrats now %s is level %d \n",character_in_game.name, character_in_game.lvl);
+    if (sendData(conn, tosend) > 0) {
+        if ((data_received=receiveData(conn)) != NULL) {
+            return data_received;
+        
         } else {
-
-            character_in_game.currentExp--;
-            return;
+            printf("Couldn´t receive data from server\n");
+            exit(1);
         }
-
-    }
-    if(counter == 10) {
-        counter = 0;
-
-        data_to_send = newData(SAVE_STATS);
-
-        strcpy(data_to_send->avmdata.charSelected.name, character_in_game.name);
-        data_to_send->avmdata.charSelected.lvl = character_in_game.lvl;
-        data_to_send->avmdata.charSelected.totalExp = character_in_game.totalExp;
-        data_to_send->avmdata.charSelected.currentExp = character_in_game.currentExp;
-
-        sendData(connection, data_to_send);
-
-        data_from_server = receiveData(connection);
-
-
+    
     } else {
-        counter++;
+        printf("Couldn´t send data so server, check if server is avaible.\n");
+        exit(1);
+    }
+    
+}
+
+void client_close() {
+    if (connected) {
+        comm_disconnect(connection);
+        free(connection);
     }
 }
 
-void getLevel() {
-     printf("level: %d\t exp: %d/%d\n",character_in_game.lvl, character_in_game.currentExp, character_in_game.totalExp);
+void clt_sigRutine(int sig) {
+
+    Data * new_data = newData(CONNECTION_INTERRUMPED);
+    
+    sendData(connection, new_data);
+    
+    client_close();
+
+    free(new_data);
+    
+    printf("\n");
+    printf("Client proccess with pid: %d terminated\n", getpid());
+    exit(1); 
 }
+
+void freeData() {
+
+    free(data_to_send);
+    free(data_from_server);
+}
+

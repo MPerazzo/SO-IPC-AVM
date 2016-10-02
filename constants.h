@@ -51,6 +51,7 @@
 #define SIZE 20
 #define KEY_LENGTH 3
 #define BUFF_SIZE 20
+#define LIMIT_TOSAVE 10
 
 
 #endif

@@ -158,7 +158,7 @@ void newSession(Connection * connection) {
 			characters[1].lvl = data_from_client->avmdata.charSelected.lvl;
 			characters[1].totalExp = data_from_client->avmdata.charSelected.totalExp;
 			characters[1].currentExp = data_from_client->avmdata.charSelected.currentExp;
-			printf("CHARACTER: name:%s lvl:%d exp: %d/%d\n", characters[1].name, characters[1].lvl, characters[1].totalExp, characters[1].currentExp);
+			printf("CHARACTER: name:%s lvl:%d exp: %d/%d\n", characters[1].name, characters[1].lvl,characters[1].currentExp, characters[1].totalExp);
 
 			data_to_send = newData(NO_ERR);
 

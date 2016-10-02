@@ -8,7 +8,7 @@
 #include "types.h"
 #include "comm.h"
 #include "daemon.h"
-#include "states.h"
+#include "constants.h"
 
 void srv_sigRutine(int);
 void initDB_calls();
@@ -16,7 +16,7 @@ void * newSession(void *);
 void server_close();
 void current_close(Connection *);
 
-char * getadress();
+char * getaddress();
 Data * receiveData(Connection *);
 
 Listener * listener;
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     
     initDB_calls();
 
-    char * address = getadress();
+    char * address = getaddress();
 
 	listener = comm_listen(address);
 
@@ -107,13 +107,11 @@ void * newSession(void * args) {
 
 			return;
 
-		} else if(data_from_client->opcode == TEST_MESSAGE_STRING) {
-
-			printf("[session %d] received message: %s", current_session, data_from_client->avmdata.message);
-
 		} else {
 
 			printf("[session %d] error: unknown operation requested\n", current_session);
+
+			sndMessage("No valid operation requested", INFO_TYPE);
 
 		}
 	}
