@@ -1,0 +1,3 @@
+para compilar el ejemplo:
+	gcc -o ser ser.c sharedMem.c sharedMem.h -lrt
+	gcc -o ser ser.c sharedMem.c sharedMem.h -lrt
