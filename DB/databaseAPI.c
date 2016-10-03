@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sqlite3.h>
-#include "databaseapi.h"
+#include "databaseAPI.h"
 
-char[25] gname;
+char gname[25];
 
 sqlite3* DBOpen(void) {
   sqlite3* db;
@@ -66,9 +66,9 @@ int DBNewUser(char username[25], char password[5]) {
 	return ADD_USER_PASSED;
 }
 
-int DBDeleteUser (char username[25]){
+int DBDeleteUser (char username[25]) {
 
-  sqlite3* db = DbOpen();
+  sqlite3* db = DBOpen();
 
   if (db == DB_OPEN_ERROR) {
     return DB_ERROR;
@@ -93,7 +93,7 @@ int DBDeleteUser (char username[25]){
 
 int DBChangeUserPassword (char username[25], char newPassword[25]) {
 
-  sqlite3* db = DbOpen();
+  sqlite3* db = DBOpen();
 
   if (db == DB_OPEN_ERROR) {
     return DB_ERROR;
@@ -103,7 +103,7 @@ int DBChangeUserPassword (char username[25], char newPassword[25]) {
   char query[200];
 
   sprintf (query, DB_CHANGE_PASSWORD, newPassword, username);
-  rc = sqlite3_exec(db, query, 0, 0, &err_msg);
+  int rc = sqlite3_exec(db, query, 0, 0, &err_msg);
 
   if (rc != SQLITE_OK ) {
     fprintf(stderr, "SQL error: %s\n", err_msg);
@@ -127,7 +127,7 @@ int DBCreateCharacterTable() {
 
   char *err_msg = 0;
 
-  int rc = sqlite3_exec(db, DB_CREATE_CHARACTER_TABLE, 0, 0, &err_msg);
+  int rc = sqlite3_exec(db, DB_CREATE_TABLE_CHARACTER, 0, 0, &err_msg);
   if (rc != SQLITE_OK ) {
     fprintf(stderr, "SQL error: %s\n", err_msg);
     //fprintf(stderr, "SQL error: %d\n", rc);
@@ -184,8 +184,11 @@ int DBAddExp (char name[25]) {
   }
 
   sqlite3_close(db);
-  DBGetExperience(name);
-  return ADD_EXP_PASSED;
+  if( DBGetExperience(name) == GET_EXP_PASSED) {
+    return ADD_EXP_PASSED;
+  } else {
+    return DB_ERROR;
+  }
 }
 
 int DBAddLevel (char name[25]) {
@@ -213,10 +216,19 @@ int DBAddLevel (char name[25]) {
   return ADD_LEVEL_PASSED;
 }
 
+int levelUp (void* NotUsed, int resc, char **resv, char **colName) {
+  if (resv[0]) {
+    if(resv[0] == 10) {
+      DBAddLevel(gname);
+    }
+  }
+  return 0;
+}
+
 int DBGetExperience (char name[25]) {
 
   sqlite3* db = DBOpen();
-  gname = name;
+  strcpy(name, gname);
 
   if (db == DB_OPEN_ERROR) {
     return DB_ERROR;
@@ -236,14 +248,5 @@ int DBGetExperience (char name[25]) {
   }
 
   sqlite3_close(db);
-  return rc;
-}
-
-int levelUp (void* NotUsed, int resc, char **resv) {
-  if (resv[0]) {
-    if(resv[0] == 10) {
-      DBAddLevel(gname);
-    }
-  }
-  return 0;
+  return GET_EXP_PASSED;
 }

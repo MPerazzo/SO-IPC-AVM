@@ -5,11 +5,12 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <time.h>
-#include "../Api/commons.h"
 #include "../commsfifos.h"
 #include "databaseAPI.h"
 
 void processRequestDatabase (Connection * connection) {
   int state;
+
+  // SWITCH CASE REQUEST TYPE 
 }
 

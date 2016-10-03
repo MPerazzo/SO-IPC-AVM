@@ -1,8 +1,6 @@
 /*
 Bidirectional queue
-
 Message.mtype:
-
 		1-Info
 		2-Warning
 		3-Error

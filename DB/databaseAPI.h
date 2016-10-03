@@ -9,7 +9,6 @@
 #define USER_ALREADY_EXISTS 19
 #define USER_ALREADY_EXISTS_MSG "That username has already been taken"
 
-
 // USER
 
 // Create User Table 
@@ -26,8 +25,7 @@
 // CHARACTER 
 
 // Create Character Table
-#define DB_CREATE_TABLE_CHARACTER "CREATE TABLE Characters(Owner varchar[25],Name varchar[25] PRIMARY KEY, Lvl int DEFAULT 1, Totalexp int DEFAULT 0,
-Currentexp int DEFAULT 0, FOREIGN KEY(Owner) REFERENCES Users(Username) ) ;"
+#define DB_CREATE_TABLE_CHARACTER "CREATE TABLE Characters(Owner varchar[25],Name varchar[25] PRIMARY KEY, Lvl int DEFAULT 1, Totalexp int DEFAULT 0, Currentexp int DEFAULT 0, FOREIGN KEY(Owner) REFERENCES Users(Username) ) ;"
 // Delete Character Table // 
 #define DB_DROP_TABLE_CHARACTER ("DROP TABLE 'Characters'")
 // Create Character // Send parameters in order
@@ -62,17 +60,16 @@ Currentexp int DEFAULT 0, FOREIGN KEY(Owner) REFERENCES Users(Username) ) ;"
 #define ADD_LEVEL_PASSED 9
 #define GET_EXP_PASSED 10
 
-
-sqlite3* DbOpen(void);
-int DbCeckTableExistance(sqlite3* db);
-int DbCreateTable();
-int DbAddStudent(char name[25], char average[5]);
-int DbDeleteStudent (char name[25]);
-int DbReadStudents ();
-int printRow (void *NotUsed, int argc, char **argv, char **azColName);
-int DbDropTable ();
-int DbDropDatabase (char databaseName[25]);
-int DbUpdateStudent (char currentName[25], char newName[25], char average[5]);
-void processRequestDatabase (Request * request);
+sqlite3* DBOpen(void);
+int DBCreateUserTable();
+int DBNewUser(char username[25], char password[5]);
+int DBDeleteUser (char username[25]) ;
+int DBChangeUserPassword (char username[25], char newPassword[25]);
+int DBCreateCharacterTable();
+int DBNewCharacter(char username[25], char name[5]);
+int DBAddExp (char name[25]);
+int DBAddLevel (char name[25]);
+int levelUp (void* NotUsed, int resc, char **resv, char **colName);
+int DBGetExperience (char name[25]);
 
 #endif
