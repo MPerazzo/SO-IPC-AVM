@@ -6,3 +6,5 @@
 un handling de error en sendData pero parece que no es la solución.
 -Si no hay serve conectado y se inicia el cliente, el cliente se bloquea y no se desbloquea nunca mas. En estos casos deberían pasar 
 alguna de estas dos cosas: o el cliente se bloquea y cuando se conecta el server se desbloquea, o se hace un exit en el cliente cuando no hay server. 
+
+-sudo apt-get install sqlite3 libsqlite3-dev y agregar al gcc -lsqlite3
