@@ -134,35 +134,23 @@ void newSession(Connection * connection) {
 			sendData(connection, data_to_send);
 
 		} else if(data_from_client->opcode == CREATE_CHARACTER) {
+
 			strcpy(characters[1].name, data_from_client->avmdata.charSelected.name);
 			characters[1].lvl = 1;
 			characters[1].totalExp = 10;
 			data_to_send = newData(NO_ERR);
 
         	sendData(connection, data_to_send);
+
 		} else if(data_from_client->opcode == SHOW_CHARACTER) {
 
-		} else if(data_from_client->opcode == EXIT_GAME) {
-			data_to_send = newData(NO_ERR);
-
-        	sendData(connection, data_to_send);
-		} else if(data_from_client->opcode == EXIT_GAME_SAVE) {
-			data_to_send = newData(NO_ERR);
-
-        	sendData(connection, data_to_send);
-		} else if(data_from_client->opcode == LOGOUT) {
-
-		} else if(data_from_client->opcode == LOGOUT_SAVE) {
-
 		} else if(data_from_client->opcode == SAVE_STATS) {
+
 			characters[1].lvl = data_from_client->avmdata.charSelected.lvl;
 			characters[1].totalExp = data_from_client->avmdata.charSelected.totalExp;
 			characters[1].currentExp = data_from_client->avmdata.charSelected.currentExp;
 			printf("CHARACTER: name:%s lvl:%d exp: %d/%d\n", characters[1].name, characters[1].lvl,characters[1].currentExp, characters[1].totalExp);
 
-			data_to_send = newData(NO_ERR);
-
-        	sendData(connection, data_to_send);
 		} else if(data_from_client->opcode == END_OF_CONNECTION) {
 
 			printf("[session %d] session ended, END_OF_CONNECTION opcode received\n", getpid());

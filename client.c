@@ -36,6 +36,15 @@ void point();
 void getLevel();
 void freeData();
 
+Data * loginC(char *,char *, Connection *);
+Data * createAccountC(char *, char *, Connection *);
+Data * selectCharacterC(char *, Connection *);
+Data * createCharacterC(char *, Connection *);
+Data * deleteCharacterC(char *, Connection *);
+Data * showCharactersC(Connection *);
+void saveStatsC(Character, Connection *);
+Data * communicate(Connection *, Data *);
+
 Data * newData(Opcode);
 
 typedef void (* func) ();
@@ -59,7 +68,6 @@ bool connected;
 
 Connection * connection;
 Data * data_from_server;
-Data * data_to_send;
 
 Character character_in_game;
 int counter = 0;
@@ -105,7 +113,7 @@ void run_session() {
 
             sendData(connection, newData(END_OF_CONNECTION));
 
-            client_close();
+            client_close(connection);
 
             return ;
 
@@ -189,11 +197,6 @@ void loadCommands() {
     commands[POINT].actionOnState[PLAY_GAME] = 1;
     strcpy(commands[POINT].description, "No parameters\nDescription: generates an experince point.\n");
 
-    commands[GET_LEVEL].name = "getLevel";
-    commands[GET_LEVEL].function = (func)&getLevel;
-    commands[GET_LEVEL].cantArgs = 0;
-    commands[GET_LEVEL].actionOnState[PLAY_GAME] = 1;
-    strcpy(commands[GET_LEVEL].description, "No parameters\nDescription: Show the level of character and the totalExp required for the next level. Also shows the currentExp.\n");
 }
 
 void parser(char * buffer, int state) {
@@ -318,14 +321,7 @@ void login(char * account,char * password) {
         return;
     }
 
-    data_to_send = newData(LOGIN);
-
-    strcpy(data_to_send->avmdata.user.account, account);
-    strcpy(data_to_send->avmdata.user.password, password);
-
-    sendData(connection, data_to_send);
-
-    data_from_server = communicate(connection, data_to_send);
+    data_from_server = loginC(account, password, connection);
 
     if(data_from_server->opcode == ERR_PARAMETER) {
         printf("The Username or password is incorrect.\n");
@@ -344,12 +340,7 @@ void createAccount(char * account, char * password) {
         return;
     }
 
-    data_to_send = newData(CREATE_ACCOUNT);
-
-    strcpy(data_to_send->avmdata.user.account, account);
-    strcpy(data_to_send->avmdata.user.password, password);
-
-    data_from_server = communicate(connection, data_to_send);
+    data_from_server = createAccountC(account, password, connection);
 
     if(data_from_server->opcode == ERR_PARAMETER){
         printf("Username already exist.\n");
@@ -367,15 +358,7 @@ void selectCharacter(char * name) {
         return;
     }
 
-    data_to_send = newData(SELECT_CHARACTER);
-
-    strcpy(data_to_send->avmdata.charSelected.name, name);
-
-    sendData(connection, data_to_send);
-
-
-
-    data_from_server = receiveData(connection);
+    data_from_server = selectCharacterC(name, connection);
 
     if(data_from_server->opcode == ERR_PARAMETER){
         printf("No character exists with that name.\n");
@@ -398,12 +381,8 @@ void createCharacter(char * name) {
         printf("Limit of characters exceeded. The maximum is twenty for your character name.\n");
         return;
     }
-    
-    data_to_send = newData(CREATE_CHARACTER);
 
-    strcpy(data_to_send->avmdata.charSelected.name, name);
-
-    data_from_server = communicate(connection, data_to_send);
+    data_from_server = createCharacterC(name, connection);
 
     if(data_from_server->opcode == ERR_PARAMETER){
         if(data_from_server->avmdata.cantCharacters == MAX_CHARACTERS) {
@@ -424,11 +403,7 @@ void deleteCharacter(char * name) {
         return;
     }
 
-    data_to_send = newData(DELETE_CHARACTER);
-
-    strcpy(data_to_send->avmdata.charSelected.name, name);
-
-    data_from_server = communicate(connection, data_to_send);
+    data_from_server = deleteCharacterC(name, connection);
 
     if(data_from_server->opcode == ERR_PARAMETER){
         printf("No character exists with that name.\n");
@@ -441,9 +416,7 @@ void deleteCharacter(char * name) {
 
 void showCharacters() {
 
-    data_to_send = newData(SHOW_CHARACTER);
-
-    data_from_server = communicate(connection, data_to_send);
+    data_from_server = showCharactersC(connection);
 
     if(data_from_server->avmdata.cantCharacters != 0) {
         int i;
@@ -487,43 +460,22 @@ void point() {
         
         counter = 0;
 
-        data_to_send = newData(SAVE_STATS);
-
-        strcpy(data_to_send->avmdata.charSelected.name, character_in_game.name);
-        data_to_send->avmdata.charSelected.lvl = character_in_game.lvl;
-        data_to_send->avmdata.charSelected.totalExp = character_in_game.totalExp;
-        data_to_send->avmdata.charSelected.currentExp = character_in_game.currentExp;
-
-        sendData(connection, data_to_send);   
-
-        free(data_to_send);     
+        saveStatsC(character_in_game, connection);   
 
     } else {
         counter++;
     }
 }
 
-void getLevel() {
-     printf("level: %d\t exp: %d/%d\n",character_in_game.lvl, character_in_game.currentExp, character_in_game.totalExp);
-}
-
 void exitGame() {
     
     if(session_state == PLAY_GAME) {
         
-        data_to_send = newData(EXIT_GAME_SAVE);
+        saveStatsC(character_in_game, connection);
 
-        sendData(connection, data_to_send);
-
-    } else {
-        
-        data_to_send = newData(EXIT_GAME);
-
-        sendData(connection, data_to_send);; 
     }
-    printf("Thank you for playing. See you later :)\n");
 
-    free(data_to_send);
+    printf("Thank you for playing. See you later :)\n");
 
     session_state = END_SESSION;
 }
@@ -532,41 +484,12 @@ void logOut() {
 
     if(session_state == PLAY_GAME) {
         
-        data_to_send = newData(LOGOUT_SAVE);
+        saveStatsC(character_in_game, connection);
 
-        sendData(connection, data_to_send);
-
-    } else {
-        
-        data_to_send = newData(LOGOUT);
-
-        sendData(connection, data_to_send);
     }
     printf("You have logged out successfully\n");
 
-    free(data_to_send);
-
     session_state = USER_LOGIN;
-}
-
-Data * communicate(Connection * conn, Data * tosend) {
-    
-    Data * data_received;
-
-    if (sendData(conn, tosend) > 0) {
-        if ((data_received=receiveData(conn)) != NULL) {
-            return data_received;
-        
-        } else {
-            printf("Couldn´t receive data from server\n");
-            exit(1);
-        }
-    
-    } else {
-        printf("Couldn´t send data so server, check if server is avaible.\n");
-        exit(1);
-    }
-    
 }
 
 void client_close() {
@@ -592,8 +515,5 @@ void clt_sigRutine(int sig) {
 }
 
 void freeData() {
-
-    free(data_to_send);
     free(data_from_server);
 }
-

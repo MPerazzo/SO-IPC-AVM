@@ -24,10 +24,7 @@
 #define HELP 7
 #define LOGOUT 8
 #define POINT 9
-#define GET_LEVEL 10
-#define EXIT_GAME_SAVE 11
-#define LOGOUT_SAVE 12
-#define SAVE_STATS 13
+#define SAVE_STATS 12
 
 /*Opcode from server*/
 #define ERR_PARAMETER 1
@@ -39,7 +36,7 @@
 
 /*length or sizes*/
 #define CANT_ARGS 5
-#define COMM_SIZE 11
+#define COMM_SIZE 10
 #define STATES 6
 #define BLOCK 10
 #define LEVEL_MAX 10
