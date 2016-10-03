@@ -252,16 +252,6 @@ int DBGetExperience (char name[25]) {
   return GET_EXP_PASSED;
 }
 
-
-//
-#define DB_GET_LOGIN ("SELECT * FROM Users WHERE Username='%s' AND Password='%s'")
-// Get Character Info
-#define DB_GET_SINGLE_CHARACTER ("SELECT * FROM Characters WHERE Owner='%s' AND Name='%s'")
-// Get Character List Info
-#define DB_GET_CHARACTER_LIST ("SELECT * FROM Characters WHERE Owner='%s'")
-// Uptate Character Info
-#define DB_UPDATE_CHARACTER ("UPDATE Characters SET Level='%s', Currentexp='%s', Totalexp='%s' WHERE Name='%s'")
-
 int checkLogin (void* NotUsed, int resc, char **resv, char **colName) {
   if (resc > 0) {
     login = TRUE;
@@ -322,4 +312,66 @@ int DBChangeCharacterInfo (char name[25], int lvl, int currentexp, int totalexp)
 
   sqlite3_close(db);
   return UPDATE_CHARACTER_PASSED;
+}
+
+int printChar(void *NotUsed, int argc, char **argv, char **azColName) {
+  NotUsed = 0;
+
+  for (int i = 0; i < argc; i=i+2) {
+    printf("%s\t%s\t%s\t%s", argv[i] ? argv[i] : "NULL", argv[i+1] ? argv[i+1] : "NULL", argv[i+2] ? argv[i+2] : "NULL", argv[i+3] ? argv[i+3] : "NULL");
+  }
+  printf("\n");
+  return 0;
+}
+
+int DBGetSingleCharacter (char username[25], char name[25]) {
+  
+  sqlite3* db = DBOpen();
+
+  if (db == DB_OPEN_ERROR) {
+    return DB_ERROR;
+  }
+
+  char *err_msg = 0;
+  char query[200];
+
+  sprintf (query, DB_GET_SINGLE_CHARACTER, username, name);
+  printf("Name\tLevel\tExp\tTotal-Exp\n");
+  int rc = sqlite3_exec(db, query, printChar, 0, &err_msg);
+
+  if (rc != SQLITE_OK ) {
+    fprintf(stderr, "Couldn't get information\n");
+    sqlite3_free(err_msg);
+    sqlite3_close(db);
+    return 1;
+  }
+
+  sqlite3_close(db);
+  return 0;
+}
+
+int DBGetCharactersList (char username[25]) {
+  
+  sqlite3* db = DBOpen();
+
+  if (db == DB_OPEN_ERROR) {
+    return DB_ERROR;
+  }
+
+  char *err_msg = 0;
+  char query[200];
+
+  sprintf (query, DB_GET_CHARACTER_LIST, username);
+  printf("Name\tLevel\tExp\tTotal-Exp\n");
+  int rc = sqlite3_exec(db, query, printChar, 0, &err_msg);
+
+  if (rc != SQLITE_OK ) {
+    fprintf(stderr, "Couldn't get information\n");
+    sqlite3_free(err_msg);
+    sqlite3_close(db);
+    return 1;
+  }
+
+  sqlite3_close(db);
+  return 0;
 }

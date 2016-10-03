@@ -88,4 +88,12 @@ int DBAddLevel (char name[25]);
 int levelUp (void* NotUsed, int resc, char **resv, char **colName);
 int DBGetExperience (char name[25]);
 
+//
+int checkLogin (void* NotUsed, int resc, char **resv, char **colName);
+int DBGetUser (char username[25], char password[25]);
+int DBChangeCharacterInfo (char name[25], int lvl, int currentexp, int totalexp);
+int printChar(void *NotUsed, int argc, char **argv, char **azColName);
+int DBGetSingleCharacter (char username[25], char name[25]);
+int DBGetCharactersList (char username[25]);
+
 #endif
