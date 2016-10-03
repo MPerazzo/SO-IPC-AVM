@@ -37,12 +37,26 @@
 // Get Current Exp // Send Name as param
 #define DB_GET_CHARACTER_EXP ("SELECT Currentexp FROM Characters WHERE Name='%s'")
 
-
-
 // Get a single value // (Test if can send '*') - Var 1 = Field, Var 2 = Table
 #define DB_SELECT_FIELD_FROM_TABLE ("SELECT '%s' FROM '%s'") 
 // Get a single value with condition // - Var 1 = Field, Var 2 = Table, Var 3 = Field to Compare, Var 4 = Condition
 #define DB_SELECT_FIELD_FROM_TABLE_WHERE ("SELECT '%s' FROM '%s' WHERE '%s'='%s'")
+
+// On Demand
+// Get User if name & pass
+#define DB_GET_LOGIN ("SELECT * FROM Users WHERE Username='%s' AND Password='%s'")
+
+#define USER_REGISTERED 11
+#define USER_NOT_REGISTERED 12
+
+// Get Character Info
+#define DB_GET_SINGLE_CHARACTER ("SELECT * FROM Characters WHERE Owner='%s' AND Name='%s'")
+// Get Character List Info
+#define DB_GET_CHARACTER_LIST ("SELECT * FROM Characters WHERE Owner='%s'")
+// Uptate Character Info
+#define DB_UPDATE_CHARACTER ("UPDATE Characters SET Level='%s', Currentexp='%s', Totalexp='%s' WHERE Name='%s'")
+
+#define UPDATE_CHARACTER_PASSED 13
 
 
 
@@ -59,6 +73,8 @@
 #define ADD_EXP_PASSED 8
 #define ADD_LEVEL_PASSED 9
 #define GET_EXP_PASSED 10
+
+
 
 sqlite3* DBOpen(void);
 int DBCreateUserTable();

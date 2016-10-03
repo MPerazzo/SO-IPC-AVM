@@ -4,6 +4,7 @@
 #include "databaseAPI.h"
 
 char gname[25];
+bool login = FALSE;
 
 sqlite3* DBOpen(void) {
   sqlite3* db;
@@ -249,4 +250,76 @@ int DBGetExperience (char name[25]) {
 
   sqlite3_close(db);
   return GET_EXP_PASSED;
+}
+
+
+//
+#define DB_GET_LOGIN ("SELECT * FROM Users WHERE Username='%s' AND Password='%s'")
+// Get Character Info
+#define DB_GET_SINGLE_CHARACTER ("SELECT * FROM Characters WHERE Owner='%s' AND Name='%s'")
+// Get Character List Info
+#define DB_GET_CHARACTER_LIST ("SELECT * FROM Characters WHERE Owner='%s'")
+// Uptate Character Info
+#define DB_UPDATE_CHARACTER ("UPDATE Characters SET Level='%s', Currentexp='%s', Totalexp='%s' WHERE Name='%s'")
+
+int checkLogin (void* NotUsed, int resc, char **resv, char **colName) {
+  if (resc > 0) {
+    login = TRUE;
+  }
+  return 0;
+}
+
+int DBGetUser (char username[25], char password[25]) {
+
+  sqlite3* db = DBOpen();
+
+  if (db == DB_OPEN_ERROR) {
+    return DB_ERROR;
+  }
+
+  char *err_msg = 0;
+  char query[200];
+
+  sprintf (query, DB_GET_LOGIN, username, password);
+  int rc = sqlite3_exec(db, query, checkLogin, 0, &err_msg);
+
+  if (rc != SQLITE_OK ) {
+    fprintf(stderr, "SQL error: %s\n", err_msg);
+    sqlite3_free(err_msg);
+    sqlite3_close(db);
+    return DB_ERROR;
+  }
+
+  sqlite3_close(db);
+  if (login) {
+    fprintf(stderr, "SQL error: %s\n", err_msg);
+    return USER_REGISTERED;
+  } else {
+    return USER_NOT_REGISTERED;
+  }
+}
+
+int DBChangeCharacterInfo (char name[25], int lvl, int currentexp, int totalexp) {
+
+  sqlite3* db = DBOpen();
+
+  if (db == DB_OPEN_ERROR) {
+    return DB_ERROR;
+  }
+
+  char *err_msg = 0;
+  char query[200];
+
+  sprintf (query, DB_UPDATE_CHARACTER, lvl, currentexp, totalexp, name);
+  int rc = sqlite3_exec(db, query, 0, 0, &err_msg);
+
+  if (rc != SQLITE_OK ) {
+    fprintf(stderr, "SQL error: %s\n", err_msg);
+    //fprintf(stderr, "SQL error: %d\n", rc);
+    sqlite3_free(err_msg);
+    sqlite3_close(db);
+  }
+
+  sqlite3_close(db);
+  return UPDATE_CHARACTER_PASSED;
 }
