@@ -2,41 +2,30 @@
 #ifndef _CONSTANTS_H
 #define _CONSTANTS_H
 
+typedef enum { false, true } bool;
+
 /*Game States*/
-#define END_SESSION 0
-#define USER_LOGIN 1
-#define CHAR_SELECTION 2
-#define PLAY_GAME 3
+#define CHAR_SELECTION 1
+#define PLAY_GAME 2
 
-/*Args types*/
-#define STRING 0
-#define INT 1
-#define DOUBLE 2
-
-/*Opcode from client*/
-#define LOGIN 0
-#define CREATE_ACCOUNT 1
+/*Opcodes */
 #define SELECT_CHARACTER 2
 #define CREATE_CHARACTER 3
 #define DELETE_CHARACTER 4
-#define SHOW_CHARACTER 5
-#define EXIT_GAME 6
-#define HELP 7
-#define LOGOUT 8
-#define POINT 9
-#define SAVE_STATS 12
+#define EXP_UP 14
 
-/*Opcode from server*/
-#define ERR_PARAMETER 1
-#define NO_ERR 2
+#define CHAR_ALREADY_EXISTS 20
+#define CHAR_DOESNT_EXIST 21
+#define CHAR_SELECT_SUCCESFUL 22
+#define CHAR_BUSY 23
+#define NO_ERROR 500
 
-/* ocpcodes */
-#define END_OF_CONNECTION 200
-#define CONNECTION_INTERRUMPED 300
+#define EXIT 200
+#define EXIT_AND_LOGOUT 300
 
 /*length or sizes*/
 #define CANT_ARGS 5
-#define COMM_SIZE 10
+#define COMM_SIZE 11
 #define STATES 6
 #define BLOCK 10
 #define LEVEL_MAX 10
@@ -48,7 +37,5 @@
 #define SIZE 20
 #define KEY_LENGTH 3
 #define BUFF_SIZE 20
-#define LIMIT_TOSAVE 10
-
 
 #endif

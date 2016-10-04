@@ -3,69 +3,86 @@
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
 
 #include "types.h"
 #include "comm.h"
+#include "databasecomm.h"
 #include "daemon.h"
 #include "constants.h"
+#include "semaphores.h"
 
 void srv_sigRutine(int);
 void initDB_calls();
 void newSession(Connection *);
 void server_close();
+void server_process_data();
+void communicate_with_database();
 
 char * getaddress();
-Data * receiveData(Connection *);
-Data * newData(Opcode opcode);
 
-bool connected_toclt;
+int session_ended = 0;
+
+int semaphore_id;
+
+Data * data_from_client;
+Data * data_to_client;
+
+char character[100];
+int totalExp;
 
 Listener * listener;
 Connection * connection;
+DBConnection * db_connection;
 
-int main(int argc, char *argv[])
-{
-	connected_toclt = false;
+int main(int argc, char *argv[]) {
 
-	signal(SIGINT, srv_sigRutine);
+	printf("[server] initializing\n");
+	sndMessage("initializing server", INFO_TYPE);
 
-	if ( initLogin(false) == -1 ) {
-    	printf("Couldn´t create message queue for server\n");
+    char * address = getaddress("SV");
+
+    signal(SIGINT, srv_sigRutine);
+
+    if (initLogin(false) == -1) {
+
+    	printf("Couldn´t create message queue for logging daemon\n");
+
     	exit(1);
-    }
-    
-    sndMessage("Server is logged in", INFO_TYPE); // sends message to daemonServer
-    
-    initDB_calls();
 
-    char * address = getaddress();
+    }
+
+    semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
 
 	listener = comm_listen(address);
 
-	if (listener==NULL) {
-		sndMessage("Couldn´t create listener", ERROR_TYPE);
+	if (listener == NULL) {
+
+		sndMessage("couldn´t create listener", ERROR_TYPE);
+
 		exit(1);
+
 	}
 
 	printf("[server] awaiting connection requests\n");
+	sndMessage("ready to receive connection requests", INFO_TYPE);
 
 	while(1) {
 
 		connection = comm_accept(listener);
 
-		if (connection==NULL) {
-			sndMessage("Couldn´t create connection from listener", ERROR_TYPE);
-			exit(1);
-		}
+		if (connection == NULL) {
 
-		connected_toclt = true;
+			sndMessage("couldn't accept connection from client", ERROR_TYPE);
+
+			exit(1);
+
+		}
 
 		int newpid = fork();
 
 		if(newpid == 0) {
-
-			sndMessage("New connection", INFO_TYPE);
-
 
 			newSession(connection);
 
@@ -79,127 +96,95 @@ int main(int argc, char *argv[])
 
 void newSession(Connection * connection) {
 
-	Data * data_from_client;
-	Data * data_to_send;
-	Character characters[MAX_CHARACTERS];
-	User user;
 	printf("[session %d] new client session started\n", getpid());
+	sndMessage("new client session started", INFO_TYPE);
 
 	while (1) {
 
 		data_from_client = receiveData(connection);
 
-		if (data_from_client == NULL) {
-			exit(1);
-		}
+		server_process_data();
 
-		if(data_from_client->opcode == LOGIN) {
+		sendData(connection, data_to_client);
 
-			sndMessage("New login", INFO_TYPE);
+		if(session_ended) {
 
+			comm_disconnect(connection);
 
-			if(strcmp(user.account, data_from_client->avmdata.user.account) == 0 && strcmp(user.password, data_from_client->avmdata.user.password) == 0) {
-				data_to_send = newData(NO_ERR);
-			} else {
-				data_to_send = newData(ERR_PARAMETER);
-			}
-			sendData(connection, data_to_send);
-
-		} else if(data_from_client->opcode == CREATE_ACCOUNT) {
-
-			sndMessage("Account created", INFO_TYPE);
-
-			strcpy(user.account, data_from_client->avmdata.user.account);
-			strcpy(user.password, data_from_client->avmdata.user.password);
-
-			data_to_send = newData(NO_ERR);
-
-        	sendData(connection, data_to_send);
-
-		} else if(data_from_client->opcode == SELECT_CHARACTER) {
-			int i, flag = 0;
-			for(i = 0 ; i < MAX_CHARACTERS ; i++) {
-				if(strcmp(characters[i].name, data_from_client->avmdata.charSelected.name) == 0) {
-					flag = 1;
-					data_to_send = newData(NO_ERR);
-					strcpy(data_to_send->avmdata.charSelected.name, characters[i].name);
-					data_to_send->avmdata.charSelected.lvl = characters[i].lvl;
-					data_to_send->avmdata.charSelected.totalExp = characters[i].totalExp;
-					data_to_send->avmdata.charSelected.currentExp = characters[i].currentExp;
-				}
-			}
-			if(!flag) {
-				data_to_send = newData(ERR_PARAMETER);
-			}
-			sendData(connection, data_to_send);
-
-		} else if(data_from_client->opcode == CREATE_CHARACTER) {
-
-			strcpy(characters[1].name, data_from_client->avmdata.charSelected.name);
-			characters[1].lvl = 1;
-			characters[1].totalExp = 10;
-			data_to_send = newData(NO_ERR);
-
-        	sendData(connection, data_to_send);
-
-		} else if(data_from_client->opcode == SHOW_CHARACTER) {
-
-		} else if(data_from_client->opcode == SAVE_STATS) {
-
-			characters[1].lvl = data_from_client->avmdata.charSelected.lvl;
-			characters[1].totalExp = data_from_client->avmdata.charSelected.totalExp;
-			characters[1].currentExp = data_from_client->avmdata.charSelected.currentExp;
-			printf("CHARACTER: name:%s lvl:%d exp: %d/%d\n", characters[1].name, characters[1].lvl,characters[1].currentExp, characters[1].totalExp);
-
-		} else if(data_from_client->opcode == END_OF_CONNECTION) {
-
-			printf("[session %d] session ended, END_OF_CONNECTION opcode received\n", getpid());
-
-			sndMessage("Server is logged out with no errors", INFO_TYPE);
-
-			server_close();
-
-			return;
-
-		}  else if(data_from_client->opcode == CONNECTION_INTERRUMPED) {
-
-			printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
-
-			sndMessage("Server is logged out by kill on client", WARNING_TYPE);
-
-			server_close();
-
-			return;
-
-		} else {
-
-			printf("[session %d] error: unknown operation requested\n", getpid());
+			return ;
 
 		}
+
 	}
-}
-
-void initDB_calls() {
 
 }
 
-void server_close() {
-	if (connected_toclt == true) {
-		comm_disconnect(connection);
-		free(connection);
+void server_process_data() {
+
+	if(data_from_client->opcode == SELECT_CHARACTER) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == CREATE_CHARACTER) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == DELETE_CHARACTER) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == EXP_UP) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == EXIT) {
+
+		printf("[session %d] session ended\n", getpid());
+		sndMessage("server session ended", INFO_TYPE);
+
+		session_ended = 1;
+
+	} else if(data_from_client->opcode == EXIT_AND_LOGOUT) {
+
+		printf("[session %d] session ended\n", getpid());
+		sndMessage("server session ended", INFO_TYPE);
+
+		communicate_with_database();
+
+		session_ended = 1;
+
 	}
+
+}
+
+void communicate_with_database() {
+
+	binary_semaphore_wait(semaphore_id);
+
+	db_connection = db_comm_connect(getaddress("DBSV"));
+
+	if(db_connection == NULL) {
+
+		sndMessage("couldn't connect to database", ERROR_TYPE);
+
+		exit(1);
+
+	}
+
+	db_sendData(db_connection, data_from_client);
+
+	data_to_client = db_receiveData(db_connection);
+
+	db_comm_disconnect(db_connection);
+
+	binary_semaphore_post(semaphore_id);
+
 }
 
 void srv_sigRutine(int sig) {
 
-    printf("\n");
-    printf("Server proccess with pid: %d terminated\n", getpid());
-
     sndMessage("Server logged out by kill()", WARNING_TYPE);
-
-    free(listener);
-
-    server_close();
     
     exit(1);
+
 }

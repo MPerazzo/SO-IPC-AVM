@@ -8,89 +8,32 @@
 #include "comm.h"
 #include "constants.h"
 
-void connect();
-void clt_sigRutine(int);
 void run_session();
-void client_close();
-char * getaddress();
 
-Data * communicate(Connection * conn, Data * tosend);
-Data * receiveData(Connection * connection);
-
-void loadCommands();
-void parser(char * , int);
-int splitArgs(char * , char * args[], int);
-char * strCpy(char * );
-int convertArg(char ** , char * , int);
-
-void login(char * ,char *);
-void createAccount(char *, char *);
-void selectCharacter(char *);
-void createCharacter(char *);
-void deleteCharacter(char *);
-void showCharacters();
-void exitGame();
-void help();
-void logOut();
-void point();
-void getLevel();
-void freeData();
-
-Data * loginC(char *,char *, Connection *);
-Data * createAccountC(char *, char *, Connection *);
-Data * selectCharacterC(char *, Connection *);
-Data * createCharacterC(char *, Connection *);
-Data * deleteCharacterC(char *, Connection *);
-Data * showCharactersC(Connection *);
-void saveStatsC(Character, Connection *);
-Data * communicate(Connection *, Data *);
-
-Data * newData(Opcode);
-
-typedef void (* func) ();
-
-struct command {
-    char * name;
-    func function;
-    char typeArgs[CANT_ARGS];
-    int cantArgs;
-    int actionOnState[STATES];
-    char description[BUFFERSIZE];
-};
-
-struct command commands[COMM_SIZE] = {};
-
-char user_input[BUFFERSIZE];
+char user_input[100];
+char first_word[50];
+char second_word[50];
+char * sp = NULL;
 
 int session_state;
 
-bool connected;
-
+char * address;
 Connection * connection;
 Data * data_from_server;
+Data * data_to_send;
 
-Character character_in_game;
-int counter = 0;
-int levelsExp[LEVEL_MAX] = {10, 20, 40, 80, 160, 340, 680, 1360, 2720, 5440};
+char character[100];
+int totalExp;
 
 void main(int argc, char *argv[]) {
 
-    connected=false;
+    address = getaddress("SV");
 
-    signal(SIGINT, clt_sigRutine);
-
-    char * address = getaddress();
-
-    printf("[client] trying to connect to server on address %s\n", address);
+    printf("[client] connecting to server on address %s\n", address);
 
     connection = comm_connect(address);
 
-    if (connection==NULL)
-        exit(1);
-
-    connected=true;
-
-    printf("[client] connection established. Write help to see commands.\n");
+    printf("[client] connection established\n");
 
     run_session();
 
@@ -98,422 +41,204 @@ void main(int argc, char *argv[]) {
 
 }
 
-
 void run_session() {
 
-    session_state = USER_LOGIN;
-    loadCommands();
+    session_state = CHAR_SELECTION;
+
+    printf("[client] type \"help\" for commands\n");
 
     while(1) {
-        printf(">>");
+
+        printf("[client] enter command: ");
+
         fgets(user_input, BUFFERSIZE, stdin);
-        parser(user_input, session_state);
 
-        if(session_state == END_SESSION) {
+        sp = strchr(user_input, ' ');
 
-            sendData(connection, newData(END_OF_CONNECTION));
+        if(sp == NULL) {
 
-            client_close(connection);
+            sp = strchr(user_input, '\n');
+            *sp = '\0';
+            strcpy(first_word, user_input);
+
+        } else {
+
+            *sp++ = '\0';
+            strcpy(first_word, user_input);
+            strcpy(second_word, sp);
+
+        }
+
+        if(strcmp(first_word, "quit") == 0) {
+
+            if(session_state == PLAY_GAME) {
+
+                data_to_send = newData(EXIT_AND_LOGOUT);
+
+                strcpy(data_to_send->character.name, character);
+
+                sendData(connection, data_to_send);
+
+            } else {
+
+                sendData(connection, newData(EXIT));
+
+            }
+
+            data_from_server = receiveData(connection);
+
+            comm_disconnect(connection);
 
             return ;
 
-        }
+        } 
 
-    }
+        else if(strcmp(first_word, "createchar") == 0) {
 
-}
+            if(session_state == PLAY_GAME) {
 
-void loadCommands() {
+                printf("[client] cannot create a character. you are currently in a game\n");
 
-    commands[LOGIN].name = "login";
-    commands[LOGIN].function = (func)&login;
-    commands[LOGIN].typeArgs[0] = STRING;
-    commands[LOGIN].typeArgs[1] = STRING;
-    commands[LOGIN].cantArgs = 2;
-    commands[LOGIN].actionOnState[USER_LOGIN] = 1;
-    strcpy(commands[LOGIN].description, "Parameters: [STRING]account [STRING]password\nDescription: In order to play, you need to login.\n");
-
-    commands[CREATE_ACCOUNT].name = "createAccount";
-    commands[CREATE_ACCOUNT].function = (func)&createAccount;
-    commands[CREATE_ACCOUNT].typeArgs[0] = STRING;
-    commands[CREATE_ACCOUNT].typeArgs[1] = STRING;
-    commands[CREATE_ACCOUNT].cantArgs = 2;
-    commands[CREATE_ACCOUNT].actionOnState[USER_LOGIN] = 1;
-    strcpy(commands[CREATE_ACCOUNT].description, "Parameters: [STRING]account [STRING]password\nDescription: You can create an account for the game.\n");
-    
-    commands[SELECT_CHARACTER].name = "selectCharacter";
-    commands[SELECT_CHARACTER].function = (func)&selectCharacter;
-    commands[SELECT_CHARACTER].typeArgs[0] = STRING;
-    commands[SELECT_CHARACTER].cantArgs = 1;
-    commands[SELECT_CHARACTER].actionOnState[CHAR_SELECTION] = 1;
-    strcpy(commands[SELECT_CHARACTER].description, "Parameters: [STRING]name\nDescription: Select one of your characters to play.\n");
-
-    commands[CREATE_CHARACTER].name = "createCharacter";
-    commands[CREATE_CHARACTER].function = (func)&createCharacter;
-    commands[CREATE_CHARACTER].typeArgs[0] = STRING;
-    commands[CREATE_CHARACTER].cantArgs = 1;
-    commands[CREATE_CHARACTER].actionOnState[CHAR_SELECTION] = 1;
-    strcpy(commands[CREATE_CHARACTER].description, "Parameters: [STRING]name\nDescription: Creates a character with the name that you typing.\n");
-
-    commands[DELETE_CHARACTER].name = "deleteCharacter";
-    commands[DELETE_CHARACTER].function = (func)&deleteCharacter;
-    commands[DELETE_CHARACTER].typeArgs[0] = STRING;
-    commands[DELETE_CHARACTER].cantArgs = 1;
-    commands[DELETE_CHARACTER].actionOnState[CHAR_SELECTION] = 1;
-    strcpy(commands[DELETE_CHARACTER].description, "Parameters: [STRING]name\nDescription: Delete a character with the name that you typing.\n");
-
-    commands[SHOW_CHARACTER].name = "showCharacters";
-    commands[SHOW_CHARACTER].function = (func)&showCharacters;
-    commands[SHOW_CHARACTER].cantArgs = 0;
-    commands[SHOW_CHARACTER].actionOnState[CHAR_SELECTION] = 1;
-    strcpy(commands[SHOW_CHARACTER].description, "No parameters\nDescription: Show all your characters.\n");
-
-    commands[EXIT_GAME].name = "exitGame";
-    commands[EXIT_GAME].function = (func)&exitGame;
-    commands[EXIT_GAME].cantArgs = 0;
-    commands[EXIT_GAME].actionOnState[USER_LOGIN] = 1;
-    commands[EXIT_GAME].actionOnState[CHAR_SELECTION] = 1;
-    commands[EXIT_GAME].actionOnState[PLAY_GAME] = 1;
-    strcpy(commands[EXIT_GAME].description, "No parameters\nDescription: Exit to this game.\n");
-
-    commands[HELP].name = "help";
-    commands[HELP].function = (func)&help;
-    commands[HELP].cantArgs = 0;
-    commands[HELP].actionOnState[USER_LOGIN] = 1;
-    commands[HELP].actionOnState[CHAR_SELECTION] = 1;
-    commands[HELP].actionOnState[PLAY_GAME] = 1;
-    strcpy(commands[HELP].description, "No parameters\nDescription: Show conmmands description.\n");
-
-    commands[LOGOUT].name = "logOut";
-    commands[LOGOUT].function = (func)&logOut;
-    commands[LOGOUT].cantArgs = 0;
-    commands[LOGOUT].actionOnState[CHAR_SELECTION] = 1;
-    commands[LOGOUT].actionOnState[PLAY_GAME] = 1;
-    strcpy(commands[LOGOUT].description, "No parameters\nDescription: Back to the lobby. There you can create an account, login, and others.\n");
-
-    commands[POINT].name = "p";
-    commands[POINT].function = (func)&point;
-    commands[POINT].cantArgs = 0;
-    commands[POINT].actionOnState[PLAY_GAME] = 1;
-    strcpy(commands[POINT].description, "No parameters\nDescription: generates an experince point.\n");
-
-}
-
-void parser(char * buffer, int state) {
-    
-    int cant = 0, i, j, flag = 0;
-    char * args[CANT_ARGS];
-
-    cant = splitArgs(buffer, args, CANT_ARGS);
-    if(cant < 0) {
-        printf("Error: command incorrect, write help to see the different commands.\n");
-        return;
-    }
-    for(i = 0 ; !flag && i < COMM_SIZE ; i++) {
-
-        if(!strcmp(args[0], commands[i].name)) {
-            flag = 1;
-            if(!commands[i].actionOnState[state]) {
-                printf("Error: you can not use that command in this state of the game, write help to see the different commands.\n");
-                
-                return;
-            }else if ((cant - 1) != commands[i].cantArgs) {
-                printf("Error: incorrect amount of arguments, write help to see the different commands.\n");
-                return;
             } else {
 
-                switch (commands[i].cantArgs) {
-                case 0:
-                    commands[i].function();
-                    break;
-                case 1:
-                    commands[i].function(args[1]);
-                    break;
-                case 2:
-                    commands[i].function(args[1], args[2]);
-                    break;
+                data_to_send = newData(CREATE_CHARACTER);
+
+                strcpy(data_to_send->character.name, second_word);
+
+                sendData(connection, data_to_send);
+
+                data_from_server = receiveData(connection);
+
+                if(data_from_server->opcode == CHAR_ALREADY_EXISTS) {
+
+                    printf("[client] character already exists. try again\n");
+
+                } else {
+
+                    printf("[client] character created succesfully.\n");
+
                 }
+
             }
-        }
-    }
-    if(!flag) {
-        printf("Error: command incorrect, write help to see the different commands.\n");
-    }
-}
 
-int splitArgs(char * buffer, char * args[], int cantArgs) {
-    
-    int i = 0, index = 0, size = 0;
+        } 
 
-    if(buffer[i] == ' ') {
-        return -1;
-    }
-    args[index] = strCpy(buffer);
-    if(args[index] == NULL) {
-        return -1;
-    }
-    size = strlen(args[index]);
-    index++;
-    i += size;
-    while(buffer[i] != 0 && buffer[i] != '\n') {
-        if(cantArgs == index) {
-            return -1;
-        }
-        args[index] = strCpy((buffer + i + 1));
-        if(args[index] == NULL) {
-            return -1;
-        }
-        size = strlen(args[index]);
-        index ++;
-        i += size + 1;
-    }
-    return index;
-}
+        else if(strcmp(first_word, "selectchar") == 0) {
 
-char * strCpy(char * str) {
-    
-    int i = 0, j = 0;
-    char *aux = (char *)malloc(1*sizeof(char));
-    if(str == NULL) {
-        return NULL;
-    }
+            if(session_state == PLAY_GAME) {
 
-    while(str[i] != 0 && str[i] != ' ' && str[i] != '\n') {
-        if(i % BLOCK == 0) {
-            j++;
-            aux = (char *)realloc(aux, j*BLOCK*sizeof(char));
-            if(aux == NULL) {
-                return NULL;
+                printf("[client] you already have a character selected\n");
+
+            } else {
+
+                data_to_send = newData(SELECT_CHARACTER);
+
+                strcpy(data_to_send->character.name, second_word);
+
+                sendData(connection, data_to_send);
+
+                data_from_server = receiveData(connection);
+
+                if(data_from_server->opcode == CHAR_DOESNT_EXIST) {
+
+                    printf("[client] character doesnt exist. try again.\n");
+
+                } else if(data_from_server->opcode == CHAR_BUSY) {
+
+                    printf("[client] character is being played with by another client\n");
+
+                } else {
+
+                    printf("[client] successfully loaded character. Now playiyng. Current xp = %d\n", data_from_server->character.totalExp);
+
+                    strcpy(character, data_from_server->character.name);
+
+                    totalExp = data_from_server->character.totalExp;
+
+                    session_state = PLAY_GAME;
+
+                }
+
             }
-        }
-        aux[i] = str[i];
-        i++;
-    }
-    aux = (char *)realloc(aux, (i+1)*sizeof(char));
-    if(aux == NULL) {
-        return NULL;
-    }
-    aux[i] = 0;
-    return aux;
-}
 
-void help() {
-    int i;
+        } 
 
-    printf("\n");
-    printf("Sintaxis to call a function is: name_function arg1 arg2 ... argN\n");
-    printf("==============================================\n");
+        else if(strcmp(first_word, "deletechar") == 0) {
 
-    for (i = 0; i < COMM_SIZE; i++) {
-        if(commands[i].actionOnState[session_state]){
-            printf("==============================================\n");
-            printf("%s:\n", commands[i].name);
-            printf("%s", commands[i].description);
-            printf("==============================================\n");
-        }
-    }
-}
+            if(session_state == PLAY_GAME) {
 
-void login(char * account,char * password) {
+                printf("[client] you are currently playing a game\n");
 
-    if(strlen(account) > SIZE || strlen(password) > SIZE) {
-        printf("Limit of characters exceeded. The maximum is twenty for your Username or Password.\n");
-        return;
-    }
+            } else {
 
-    data_from_server = loginC(account, password, connection);
+                data_to_send = newData(DELETE_CHARACTER);
 
-    if(data_from_server->opcode == ERR_PARAMETER) {
-        printf("The Username or password is incorrect.\n");
-    } else if(data_from_server->opcode == NO_ERR) {
-        session_state = CHAR_SELECTION;
-        printf("You are now logged.\n");
-    }
+                strcpy(data_to_send->character.name, second_word);
 
-    freeData();
-}
+                sendData(connection, data_to_send);
 
-void createAccount(char * account, char * password) {
-    
-    if(strlen(account) > SIZE || strlen(password) > SIZE) {
-        printf("Limit of characters exceeded. The maximum is twenty for your Username or Password.\n");
-        return;
-    }
+                data_from_server = receiveData(connection);
 
-    data_from_server = createAccountC(account, password, connection);
+                if(data_from_server->opcode == CHAR_DOESNT_EXIST) {
 
-    if(data_from_server->opcode == ERR_PARAMETER){
-        printf("Username already exist.\n");
-    } if(data_from_server->opcode == NO_ERR) {
-        printf("Your account been created successfully.\n");
-    }
+                    printf("[client] character doesnt exist. try again.\n");
 
-    freeData();
-}
+                } else if(data_from_server->opcode == CHAR_BUSY) {
 
-void selectCharacter(char * name) {
+                    printf("[client] character is being played with by another client.\n");
 
-    if(strlen(name) > SIZE) {
-        printf("Limit of characters exceeded. The maximum is twenty for your character name.\n");
-        return;
-    }
+                } else {
 
-    data_from_server = selectCharacterC(name, connection);
+                    printf("[client] successfully deleted character.\n");
 
-    if(data_from_server->opcode == ERR_PARAMETER){
-        printf("No character exists with that name.\n");
-    } if(data_from_server->opcode == NO_ERR) {
-        session_state = PLAY_GAME;
-        strcpy(character_in_game.name, data_from_server->avmdata.charSelected.name);
-        character_in_game.lvl = data_from_server->avmdata.charSelected.lvl;
-        character_in_game.totalExp = data_from_server->avmdata.charSelected.totalExp;
-        character_in_game.currentExp = data_from_server->avmdata.charSelected.currentExp;
+                }
 
-        printf("Now you are playing. If you don´t know how to play use help. ENJOY!\n");
-    }
+            }
 
-    freeData();
-}
-
-void createCharacter(char * name) {
-
-    if(strlen(name) > SIZE) {
-        printf("Limit of characters exceeded. The maximum is twenty for your character name.\n");
-        return;
-    }
-
-    data_from_server = createCharacterC(name, connection);
-
-    if(data_from_server->opcode == ERR_PARAMETER){
-        if(data_from_server->avmdata.cantCharacters == MAX_CHARACTERS) {
-            printf("You can not have more characters than 5\n");
-        } else {
-            printf("That name already exists.\n");
-        }
-    } if(data_from_server->opcode == NO_ERR) {
-        printf("The character was created successfully.\n");
-    }
-
-    freeData();
-}
-
-void deleteCharacter(char * name) {
-    if(strlen(name) > SIZE) {
-        printf("Limit of characters exceeded. The maximum is twenty for your character name.\n");
-        return;
-    }
-
-    data_from_server = deleteCharacterC(name, connection);
-
-    if(data_from_server->opcode == ERR_PARAMETER){
-        printf("No character exists with that name.\n");
-    } if(data_from_server->opcode == NO_ERR) {
-        printf("The character %s has been deleted.\n", name);
-    }
-
-    freeData();
-}
-
-void showCharacters() {
-
-    data_from_server = showCharactersC(connection);
-
-    if(data_from_server->avmdata.cantCharacters != 0) {
-        int i;
-        for(i = 0 ; i < MAX_CHARACTERS ; i++) {
-        printf("==============================================\n");
-        printf("name: %s\tlevel: %d\t exp: %d/%d\n",data_from_server->avmdata.characters[i].name, data_from_server->avmdata.characters[i].lvl, 
-            data_from_server->avmdata.characters[i].currentExp, data_from_server->avmdata.characters[i].totalExp);
-        printf("==============================================\n");
-        }
-    } else {
-        printf("You do not have characters\n");
-    }
-
-    freeData();
-}
-
-void point() {
-
-    printf("Your exp is %d\n", character_in_game.currentExp);
-
-    printf("Your level is %d\n", character_in_game.lvl);
-
-    printf("Your totalExp is %d\n", character_in_game.totalExp);
-    
-    if(character_in_game.currentExp++ == character_in_game.totalExp) {
-        if(character_in_game.lvl < LEVEL_MAX) {
-
-            character_in_game.lvl ++;
-            character_in_game.totalExp = levelsExp[character_in_game.lvl];
-            character_in_game.currentExp = 0;
-            printf("Congrats now %s is level %d \n",character_in_game.name, character_in_game.lvl);
-        } else {
-
-            printf("You are lvl MAX already. Go and fullfill your destiny\n");
-            return;
         }
 
-    }
-    // Save character data in database in case connection is lost
-    if(counter == LIMIT_TOSAVE) {
+        else if(strcmp(first_word, "p") == 0) {
+
+            if(session_state == CHAR_SELECTION) {
+
+                printf("[client] must first load a character\n");
+
+            } else {
+
+                totalExp++;
+
+                data_to_send = newData(EXP_UP);
+
+                data_to_send->character.totalExp = totalExp;
+
+                strcpy(data_to_send->character.name, character);
+
+                sendData(connection, data_to_send);
+
+                data_from_server = receiveData(connection);
+
+                printf("[client] your total exp is now: %d\n", data_from_server->character.totalExp);
+
+            }
         
-        counter = 0;
+        } else if(strcmp(first_word, "help") == 0) {
 
-        saveStatsC(character_in_game, connection);   
+            printf("[client] |---command  list---|\n");
+            printf("[client] |\"createchar [name]\"|\n");
+            printf("[client] |\"selectchar [name]\"|\n");
+            printf("[client] |\"deletechar [name]\"|\n");
+            printf("[client] |\"p\" (gain 1 exp)   |\n");
+            printf("[client] |\"quit\"             |\n");
+            printf("[client] |-------------------|\n");
 
-    } else {
-        counter++;
-    }
-}
+        }
 
-void exitGame() {
-    
-    if(session_state == PLAY_GAME) {
-        
-        saveStatsC(character_in_game, connection);
+        else {
 
-    }
+            printf("[client] uknown command. type \"help\" for command list\n");
 
-    printf("Thank you for playing. See you later :)\n");
-
-    session_state = END_SESSION;
-}
-
-void logOut() {
-
-    if(session_state == PLAY_GAME) {
-        
-        saveStatsC(character_in_game, connection);
+        }
 
     }
-    printf("You have logged out successfully\n");
 
-    session_state = USER_LOGIN;
-}
-
-void client_close() {
-    if (connected) {
-        comm_disconnect(connection);
-        free(connection);
-    }
-}
-
-void clt_sigRutine(int sig) {
-
-    Data * new_data = newData(CONNECTION_INTERRUMPED);
-    
-    sendData(connection, new_data);
-    
-    client_close();
-
-    free(new_data);
-    
-    printf("\n");
-    printf("Client proccess with pid: %d terminated\n", getpid());
-    exit(1); 
-}
-
-void freeData() {
-    free(data_from_server);
 }

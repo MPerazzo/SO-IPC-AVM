@@ -38,6 +38,8 @@ int sendData(Connection * connection, Data * data) {
 
 	Datagram * datagram;
 
+	data->sender_pid = getpid();
+
 	datagram = marshall(data);
 
 	return comm_write(connection, datagram->payload, sizeof(Data));
