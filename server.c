@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 
     }
 
-    semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
+    // semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
 
 	listener = comm_listen(address);
 
@@ -162,7 +162,7 @@ void server_process_data() {
 
 void communicate_with_database() {
 
-	binary_semaphore_wait(semaphore_id);
+	// binary_semaphore_wait(semaphore_id);
 
 	db_connection = db_comm_connect(getaddress("DBSV"));
 
@@ -180,7 +180,7 @@ void communicate_with_database() {
 
 	db_comm_disconnect(db_connection);
 
-	binary_semaphore_post(semaphore_id);
+	// binary_semaphore_post(semaphore_id);
 
 }
 

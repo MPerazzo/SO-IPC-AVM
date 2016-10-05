@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/msg.h>
 #include <string.h>
+#include <pthread.h>
+
 #include "sqlite3.h"
 #include "databasecomm.h"
 #include "types.h"
@@ -34,6 +36,8 @@ DBListener * db_listener;
 DBConnection * db_connection;
 Data * data;
 
+pthread_mutex_t mutex;
+
 int main(void) {
 
     printf("[database] initializing\n");
@@ -42,9 +46,11 @@ int main(void) {
 
     db_listener = db_comm_listen(getaddress("DBSV"));
 
-    semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
+    pthread_mutex_init(&mutex, NULL);
 
-    binary_semaphore_initialize (semaphore_id);
+    // semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
+
+    // binary_semaphore_initialize (semaphore_id);
 
     printf("[database] awaiting connections\n");
 
@@ -62,7 +68,7 @@ int main(void) {
 
     }
 
-    binary_semaphore_deallocate(semaphore_id);
+    // binary_semaphore_deallocate(semaphore_id);
     
     sqlite3_close(db);
     
@@ -100,6 +106,8 @@ void initialize_table() {
 }
 
 void process_data() {
+
+    pthread_mutex_lock(&mutex);
 
     if(data->opcode == SELECT_CHARACTER) {
 
@@ -140,6 +148,8 @@ void process_data() {
         logout_char();
 
     }
+
+        pthread_mutex_unlock(&mutex);
 
 }
 
