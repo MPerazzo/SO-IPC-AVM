@@ -15,8 +15,15 @@ void select_char();
 void logout_char();
 void char_exp_up();
 void initialize_table(void);
+void process_data();
+void delete_char();
+
 int select_callback(void *, int, char **, char **);
 int delete_callback(void *, int, char **, char **);
+char * getaddress(char *);
+
+DBListener * db_comm_listen(char *);
+Data * db_receiveData(DBConnection *);
 
 sqlite3 *db;
 char *err_msg = 0;
@@ -75,7 +82,7 @@ void initialize_table() {
                 sqlite3_errmsg(db));
         sqlite3_close(db);
         
-        return 1;
+        return;
     }
 
     char *sql = "CREATE TABLE Chars(Id TEXT PRIMARY KEY, Exp INTEGER, Inuse INTEGER);";

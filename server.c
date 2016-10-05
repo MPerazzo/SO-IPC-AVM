@@ -20,6 +20,9 @@ void server_close();
 void server_process_data();
 void communicate_with_database();
 
+Data * receiveData(Connection *);
+Data * db_receiveData(DBConnection *);
+
 char * getaddress();
 
 int session_ended = 0;

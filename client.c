@@ -9,6 +9,10 @@
 #include "constants.h"
 
 void run_session();
+char * getaddress(char *);
+
+Data * newData(Opcode opcode);
+Data * receiveData(Connection *);
 
 char user_input[100];
 char first_word[50];
