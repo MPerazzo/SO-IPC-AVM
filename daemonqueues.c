@@ -19,17 +19,6 @@ Message.mtype:
 #include "daemon.h"
 #include "types.h"
 
-int initLogin(bool);
-int dSrv_initLogin();
-int other_initLogin();
-int create_queue();
-int sndMessage(char *, int);
-int rcvMessage(int);
-int rcv_InfoMessage();
-int rcv_WarningMessage();
-int rcv_ErrorMessage();
-char * typetoString(long);
-void printMessage();
 
 struct Message
 {
@@ -134,7 +123,7 @@ char * typetoString(long type) {
 	return strings[type-1];
 }
 
- void printMessage() {
+void printMessage() {
 	char * string = (is_dSrv==0)?"Deamon":"Server";
 	printf("Message from server is : %s.\nDescription : Message type %s, received from %s pid : %d\n\n", msg.mdata, typetoString(msg.mtype), string, msg.svpid);
 }

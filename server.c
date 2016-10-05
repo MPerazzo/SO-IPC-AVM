@@ -11,7 +11,6 @@
 #include "databasecomm.h"
 #include "daemon.h"
 #include "constants.h"
-#include "semaphores.h"
 
 void srv_sigRutine(int);
 void initDB_calls();
@@ -42,7 +41,6 @@ DBConnection * db_connection;
 int main(int argc, char *argv[]) {
 
 	printf("[server] initializing\n");
-	sndMessage("initializing server", INFO_TYPE);
 
     char * address = getaddress("SV");
 
@@ -52,9 +50,9 @@ int main(int argc, char *argv[]) {
 
     	printf("Couldn´t create message queue for logging daemon\n");
 
-    	exit(1);
-
     }
+
+    sndMessage("Server initialized", 1);
 
     // semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
 
@@ -186,7 +184,7 @@ void communicate_with_database() {
 
 void srv_sigRutine(int sig) {
 
-    sndMessage("Server logged out by kill()", WARNING_TYPE);
+	sndMessage("Server logged out by kill()", WARNING_TYPE);
     
     exit(1);
 
