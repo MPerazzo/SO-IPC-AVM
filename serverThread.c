@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <pthread.h>
 
 #include "types.h"
 #include "comm.h"
@@ -14,10 +15,10 @@
 
 void srv_sigRutine(int);
 void initDB_calls();
-void newSession(Connection *);
 void server_close();
 void server_process_data();
 void communicate_with_database();
+void * newSession(void *);
 
 Data * receiveData(Connection *);
 Data * db_receiveData(DBConnection *);
@@ -34,11 +35,19 @@ Data * data_to_client;
 char character[100];
 int totalExp;
 
+int session;
+int current_session;
+pthread_t thread_id[MAX_THREADS];
+
 Listener * listener;
 Connection * connection;
 DBConnection * db_connection;
 
+
+
 int main(int argc, char *argv[]) {
+
+	session=0;
 
 	printf("[server] initializing\n");
 
@@ -81,36 +90,34 @@ int main(int argc, char *argv[]) {
 
 		}
 
-		int newpid = fork();
-
-		if(newpid == 0) {
-
-			newSession(connection);
-
-			return 0;
-		
-		}
-
+		pthread_create(&thread_id[session++], NULL ,&newSession, connection );	
 	}
 
 }
 
-void newSession(Connection * connection) {
+void * newSession(void * args) {
 
-	printf("[session %d] new client session started\n", getpid());
+
+	Connection * current_connection = (Connection *) args;
+
+	printf("[session %d] new client session started\n", session);
 	sndMessage("new client session started", INFO_TYPE);
+
+	int aux = session;
 
 	while (1) {
 
-		data_from_client = receiveData(connection);
+		data_from_client = receiveData(current_connection);
+
+		current_session = aux;
 
 		server_process_data();
 
-		sendData(connection, data_to_client);
+		sendData(current_connection, data_to_client);
 
 		if(session_ended) {
 
-			comm_disconnect(connection);
+			comm_disconnect(current_connection);
 
 			return ;
 
@@ -122,15 +129,25 @@ void newSession(Connection * connection) {
 
 void server_process_data() {
 
+	int server_session = current_session;
+
 	if(data_from_client->opcode == SELECT_CHARACTER) {
 
 		communicate_with_database();
 
 	} else if(data_from_client->opcode == CREATE_CHARACTER) {
 
+		printf("[session %d] character created\n", server_session);
+
+		sndMessage("Character created", INFO_TYPE);
+
 		communicate_with_database();
 
 	} else if(data_from_client->opcode == DELETE_CHARACTER) {
+
+		printf("[session %d] character deleted\n", server_session);
+
+		sndMessage("Character deleted", INFO_TYPE);
 
 		communicate_with_database();
 
@@ -140,14 +157,14 @@ void server_process_data() {
 
 	} else if(data_from_client->opcode == EXIT) {
 
-		printf("[session %d] session ended\n", getpid());
+		printf("[session %d] session ended\n", server_session);
 		sndMessage("server session ended", INFO_TYPE);
 
 		session_ended = 1;
 
 	} else if(data_from_client->opcode == EXIT_AND_LOGOUT) {
 
-		printf("[session %d] session ended\n", getpid());
+		printf("[session %d] session ended\n", server_session);
 		sndMessage("server session ended", INFO_TYPE);
 
 		communicate_with_database();
