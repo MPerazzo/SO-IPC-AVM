@@ -12,17 +12,23 @@
 #include "types.h"
 #include "constants.h"
 
+void login();
+void create_account();
 void create_char();
 void select_char();
-void logout_char();
-void char_exp_up();
-void initialize_table(void);
-void process_data();
 void delete_char();
+void logout();
+void char_exp_up();
 
 int select_callback(void *, int, char **, char **);
 int delete_callback(void *, int, char **, char **);
+int login_callback(void *, int, char **, char **);
+int create_account_callback(void *, int, char **, char **);
+
 char * getaddress(char *);
+
+void initialize_table();
+void process_data();
 
 DBListener * db_comm_listen(char *);
 Data * db_receiveData(DBConnection *);
@@ -48,9 +54,9 @@ int main(void) {
 
     pthread_mutex_init(&mutex, NULL);
 
-    // semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
+    //semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
 
-    // binary_semaphore_initialize (semaphore_id);
+    //binary_semaphore_initialize (semaphore_id);
 
     printf("[database] awaiting connections\n");
 
@@ -68,7 +74,7 @@ int main(void) {
 
     }
 
-    // binary_semaphore_deallocate(semaphore_id);
+    //binary_semaphore_deallocate(semaphore_id);
     
     sqlite3_close(db);
     
@@ -84,23 +90,37 @@ void initialize_table() {
     
     if (rc != SQLITE_OK) {
         
-        fprintf(stderr, "Cannot open database: %s\n", 
-                sqlite3_errmsg(db));
+        fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
         sqlite3_close(db);
         
         return;
     }
 
-    char *sql = "CREATE TABLE Chars(Id TEXT PRIMARY KEY, Exp INTEGER, Inuse INTEGER);";
+    char sql[200];
+
+    strcpy(sql, "CREATE TABLE User(Name TEXT PRIMARY KEY, Password TEXT, CantChar INTEGER, Inuse INTEGER)");
+    
     
     rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+    
     
     if (rc != SQLITE_OK ) {
         
         fprintf(stderr, "Failed to create table\n");
         fprintf(stderr, "SQL error: %s\n", err_msg);
         sqlite3_free(err_msg);
+    }
+
+    strcpy(sql, "CREATE TABLE Chars(Id TEXT, Level INTEGER, TotalExp INTEGER, CurrentExp INTEGER, Inuse INTEGER, Name TEXT, PRIMARY KEY(Id), FOREIGN KEY(Name) REFERENCES User(Name) ON DELETE CASCADE);");
+
+    rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+    
+    
+    if (rc != SQLITE_OK ) {
         
+        fprintf(stderr, "Failed to create table\n");
+        fprintf(stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free(err_msg);
     }
 
 }
@@ -109,7 +129,23 @@ void process_data() {
 
     pthread_mutex_lock(&mutex);
 
-    if(data->opcode == SELECT_CHARACTER) {
+    if(data->opcode == LOGIN) {
+
+        printf("[database] processing LOGIN request from server session %d\n", data->sender_pid);
+
+        login();
+
+    } 
+
+    else if(data->opcode == CREATE_ACCOUNT){
+
+        printf("[database] processing CREATE_ACCOUNT request from server session %d\n", data->sender_pid);
+
+        create_account();
+
+    } 
+
+    else if(data->opcode == SELECT_CHARACTER) {
 
         printf("[database] processing SELECT_CHARACTER request from server session %d\n", data->sender_pid);
 
@@ -132,6 +168,14 @@ void process_data() {
         delete_char();
         
     }
+    
+    else if(data->opcode == SHOW_CHARACTER) {
+
+        printf("[database] processing SHOW_CHARACTER request from server session %d\n", data->sender_pid);
+
+        //show_character();
+        
+    }
 
     else if(data->opcode == EXP_UP) {
 
@@ -145,23 +189,62 @@ void process_data() {
 
         printf("[database] processing EXIT_AND_LOGOUT request from server session %d\n", data->sender_pid);
 
-        logout_char();
+        logout();
+
+    } 
+
+    else if(data->opcode == LOGOUT) {
+
+        printf("[database] processing LOGOUT request from server session %d\n", data->sender_pid);
+
+        logout();
+    }
+
+    pthread_mutex_unlock(&mutex);
+}
+
+void login() {
+    printf("%s, %s\n", data->user.username, data->user.password);
+    sprintf(query, "SELECT * FROM User WHERE name = '%s' AND password = '%s'", data->user.username, data->user.password);
+
+    rc = sqlite3_exec(db, query, login_callback, 0, &err_msg);
+
+    if(data->opcode == LOGIN) {
+
+        data->opcode = USER_DOESNT_EXIST;
 
     }
 
-        pthread_mutex_unlock(&mutex);
-
 }
 
-void create_char() {
+int login_callback(void *NotUsed, int argc, char **argv, char **azColName) {
 
-    sprintf(query, "INSERT INTO Chars VALUES('%s', 0, 0)", data->character.name);   
+    if(atoi(argv[3]) == 1) {
 
-    rc = sqlite3_exec(db, query, 0, 0, &err_msg);
-    
+        data->opcode = USER_BUSY;
+
+    } else {
+
+        sprintf(query, "UPDATE User SET Inuse=1 WHERE Name='%s'", data->user.username);
+
+        sqlite3_exec(db, query, 0, 0, &err_msg);
+        strcpy(data->user.username, argv[0]);
+        strcpy(data->user.password, argv[1]);
+        data->opcode = NO_ERROR;
+    }
+
+    return 0;
+}
+
+void create_account() {
+    printf("%s, %s\n", data->user.username, data->user.password);
+    sprintf(query, "INSERT INTO User VALUES('%s', '%s', 0, 0)", data->user.username, data->user.password);
+
+    rc = sqlite3_exec(db, query, login_callback, 0, &err_msg);
+
     if (rc != SQLITE_OK ) {
 
-        data->opcode = CHAR_ALREADY_EXISTS;
+        data->opcode = USER_ALREADY_EXISTS;
         
         return ;
 
@@ -171,9 +254,48 @@ void create_char() {
 
 }
 
-void select_char() {
+int create_account_callback(void *NotUsed, int argc, char **argv, char **azColName) {
+    return atoi(argv[2]);
+}
 
-    sprintf(query, "SELECT * FROM Chars WHERE Id='%s'", data->character.name);
+void create_char() {
+    printf("%s, %s\n", data->user.username, data->character.name);
+    sprintf(query, "SELECT * FROM User WHERE Name = '%s'", data->user.username);   
+
+    rc = sqlite3_exec(db, query, create_account_callback, 0, &err_msg);
+
+    if(rc == MAX_CHARACTERS) {
+
+        data->opcode = TOO_MANY_CHARS;
+
+        return;
+    }
+
+    int cant = rc + 1;
+
+    sprintf(query, "INSERT INTO Chars VALUES('%s', 1, 10, 0, 0, '%s')", data->character.name, data->user.username);   
+
+    rc = sqlite3_exec(db, query, 0, 0, &err_msg);
+    
+    if (rc != SQLITE_OK ) {
+
+        data->opcode = CHAR_ALREADY_EXISTS;
+        
+        return ;
+
+    }
+
+    sprintf(query, "UPDATE User SET CantChar=%d WHERE Name='%s'", cant, data->user.username);
+
+    rc = sqlite3_exec(db, query, create_account_callback, 0, &err_msg);
+
+    data->opcode = NO_ERROR;
+
+}
+
+void select_char() {
+    printf("%s, %s\n", data->user.username, data->character.name);
+    sprintf(query, "SELECT * FROM Chars WHERE Id='%s' AND Name = '%s'", data->character.name, data->user.username);
 
     rc = sqlite3_exec(db, query, select_callback, 0, &err_msg);
 
@@ -187,7 +309,7 @@ void select_char() {
 
 int select_callback(void *NotUsed, int argc, char **argv, char **azColName) {
 
-    if(atoi(argv[2]) == 1) {
+    if(atoi(argv[4]) == 1) {
 
         data->opcode = CHAR_BUSY;
 
@@ -197,7 +319,10 @@ int select_callback(void *NotUsed, int argc, char **argv, char **azColName) {
 
         sqlite3_exec(db, query, 0, 0, &err_msg);
 
-        data->character.totalExp = atoi(argv[1]);
+        strcpy(data->character.name, argv[0]);
+        data->character.lvl = atoi(argv[1]);
+        data->character.totalExp = atoi(argv[2]);
+        data->character.currentExp = atoi(argv[3]);
 
         data->opcode = NO_ERROR;
     }
@@ -206,8 +331,8 @@ int select_callback(void *NotUsed, int argc, char **argv, char **azColName) {
 }
 
 void delete_char() {
-
-    sprintf(query, "SELECT * FROM Chars WHERE Id='%s'", data->character.name);
+    printf("%s, %s\n", data->user.username, data->character.name);
+    sprintf(query, "SELECT * FROM Chars WHERE Id='%s' AND Name='%s'", data->character.name, data->user.username);
 
     rc = sqlite3_exec(db, query, delete_callback, 0, &err_msg);
 
@@ -221,7 +346,7 @@ void delete_char() {
 
 int delete_callback(void *NotUsed, int argc, char **argv, char **azColName) {
 
-    if(atoi(argv[2]) == 1) {
+    if(atoi(argv[4]) == 1) {
 
         data->opcode = CHAR_BUSY;
 
@@ -237,9 +362,13 @@ int delete_callback(void *NotUsed, int argc, char **argv, char **azColName) {
     return 0;
 }
 
-void logout_char() {
+void logout() {
+    printf("%s\n", data->user.username);
+    sprintf(query, "UPDATE Chars SET Inuse=0 WHERE Name='%s'", data->user.username);
 
-    sprintf(query, "UPDATE Chars SET Inuse=0 WHERE Id='%s'", data->character.name);
+    sqlite3_exec(db, query, 0, 0, &err_msg);
+
+    sprintf(query, "UPDATE User SET Inuse=0 WHERE Name='%s'", data->user.username);
 
     sqlite3_exec(db, query, 0, 0, &err_msg);
 
@@ -248,9 +377,8 @@ void logout_char() {
 }
 
 void char_exp_up() {
-
-    sprintf(query, "UPDATE Chars SET Exp=%d WHERE Id='%s'", data->character.totalExp, data->character.name);
-
+    printf("%s, %d, %d, %d\n", data->character.name, data->character.lvl, data->character.totalExp, data->character.currentExp);
+    sprintf(query, "UPDATE Chars SET Level=%d, TotalExp=%d, CurrentExp=%d WHERE Id='%s'", data->character.lvl, data->character.totalExp, data->character.currentExp, data->character.name);
     sqlite3_exec(db, query, 0, 0, &err_msg);
 
     data->opcode = NO_ERROR;

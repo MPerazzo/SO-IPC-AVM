@@ -11,6 +11,7 @@
 #include "databasecomm.h"
 #include "daemon.h"
 #include "constants.h"
+#include "semaphores.h"
 
 void srv_sigRutine(int);
 void initDB_calls();
@@ -26,7 +27,7 @@ char * getaddress();
 
 int session_ended = 0;
 
-//int semaphore_id;
+int semaphore_id;
 
 Data * data_from_client;
 Data * data_to_client;
@@ -50,11 +51,13 @@ int main(int argc, char *argv[]) {
 
     	printf("Couldn´t create message queue for logging daemon\n");
 
+    	exit(1);
+
     }
 
-    sndMessage("Server initialized", 1);
+    sndMessage("initializing server", INFO_TYPE);
 
-    // semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
+    semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
 
 	listener = comm_listen(address);
 
@@ -122,7 +125,15 @@ void newSession(Connection * connection) {
 
 void server_process_data() {
 
-	if(data_from_client->opcode == SELECT_CHARACTER) {
+	if(data_from_client->opcode == LOGIN) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == CREATE_ACCOUNT) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == SELECT_CHARACTER) {
 
 		communicate_with_database();
 
@@ -134,7 +145,15 @@ void server_process_data() {
 
 		communicate_with_database();
 
+	} else if(data_to_client->opcode == SHOW_CHARACTER) {
+
+		communicate_with_database();
+
 	} else if(data_from_client->opcode == EXP_UP) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == LOGOUT) {
 
 		communicate_with_database();
 
@@ -153,14 +172,13 @@ void server_process_data() {
 		communicate_with_database();
 
 		session_ended = 1;
-
 	}
 
 }
 
 void communicate_with_database() {
 
-	// binary_semaphore_wait(semaphore_id);
+	binary_semaphore_wait(semaphore_id);
 
 	db_connection = db_comm_connect(getaddress("DBSV"));
 
@@ -178,13 +196,13 @@ void communicate_with_database() {
 
 	db_comm_disconnect(db_connection);
 
-	// binary_semaphore_post(semaphore_id);
+	binary_semaphore_post(semaphore_id);
 
 }
 
 void srv_sigRutine(int sig) {
 
-	sndMessage("Server logged out by kill()", WARNING_TYPE);
+    sndMessage("Server logged out by kill()", WARNING_TYPE);
     
     exit(1);
 
