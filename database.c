@@ -48,10 +48,6 @@ int main(void) {
 
     pthread_mutex_init(&mutex, NULL);
 
-    // semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
-
-    // binary_semaphore_initialize (semaphore_id);
-
     printf("[database] awaiting connections\n");
 
     while(1) {
@@ -67,8 +63,6 @@ int main(void) {
         db_comm_disconnect(db_connection);
 
     }
-
-    // binary_semaphore_deallocate(semaphore_id);
     
     sqlite3_close(db);
     
