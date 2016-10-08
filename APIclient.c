@@ -1,24 +1,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <signal.h>
-#include <unistd.h>
 
 #include "types.h"
-#include "comm.h"
 #include "constants.h"
+#include "comm.h"
 
-Data * loginC(char *,char *, Connection *);
-Data * createAccountC(char *, char *, Connection *);
-Data * selectCharacterC(char *, char *, Connection *);
-Data * createCharacterC(char *, char *, Connection *);
-Data * deleteCharacterC(char *, char *, Connection *);
-Data * showCharactersC(char *, Connection *);
-void expUpC(Character, char *, Connection *);
-void quitC(char *, Connection *, int);
-void logoutC(char *, Connection *);
+Data * newData(Opcode);
 Data * communicate(Connection *, Data *);
-
+Data * receiveData(Connection * connection);
 
 Data * loginC(char * account,char * password, Connection * connection) {
 
@@ -29,6 +19,8 @@ Data * loginC(char * account,char * password, Connection * connection) {
     strcpy(data_to_send->user.password, password);
 
     data_from_server = communicate(connection, data_to_send);
+
+    free(data_to_send);
 
     return data_from_server;
 }
@@ -43,6 +35,8 @@ Data * createAccountC(char * account, char * password, Connection * connection) 
 
     data_from_server = communicate(connection, data_to_send);
 
+    free(data_to_send);
+
     return data_from_server;
 }
 
@@ -55,6 +49,8 @@ Data * selectCharacterC(char * name, char * account, Connection * connection) {
     strcpy(data_to_send->user.username, account);
 
     data_from_server = communicate(connection, data_to_send);
+
+    free(data_to_send);
 
     return data_from_server;
 }
@@ -69,6 +65,8 @@ Data * createCharacterC(char * name, char * account, Connection * connection) {
 
     data_from_server = communicate(connection, data_to_send);
 
+    free(data_to_send);
+
     return data_from_server;
 }
 
@@ -82,6 +80,8 @@ Data * deleteCharacterC(char * name, char * account, Connection * connection) {
 
     data_from_server = communicate(connection, data_to_send);
 
+    free(data_to_send);
+
     return data_from_server;
 }
 
@@ -93,6 +93,8 @@ Data * showCharactersC(char * account, Connection * connection) {
     strcpy(data_to_send->user.username, account);
 
     data_from_server = communicate(connection, data_to_send);
+
+    free(data_to_send);
 
     return data_from_server;
 }
@@ -111,7 +113,7 @@ void expUpC(Character character, char * account, Connection * connection) {
 
     data_from_server = communicate(connection, data_to_send);
 
-    free(data_from_server);
+    free(data_to_send);
 
     return;
   
@@ -130,7 +132,6 @@ void quitC(char * account, Connection * connection, int logout) {
 
         data_from_server = communicate(connection, data_to_send);
 
-        free(data_from_server);
 
     } else {
 
@@ -139,7 +140,7 @@ void quitC(char * account, Connection * connection, int logout) {
 
     }
 
-
+    free(data_to_send);
 
     return;
 }
@@ -153,7 +154,7 @@ void logoutC(char * account, Connection * connection) {
 
     data_from_server = communicate(connection, data_to_send);
 
-    free(data_from_server);
+    free(data_to_send);
 
     return;
 }

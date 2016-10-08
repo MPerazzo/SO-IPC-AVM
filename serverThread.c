@@ -14,7 +14,6 @@
 #include "constants.h"
 
 void srv_sigRutine(int);
-void initDB_calls();
 void server_close();
 void server_process_data();
 void communicate_with_database();

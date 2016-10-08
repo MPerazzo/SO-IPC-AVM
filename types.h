@@ -5,14 +5,14 @@
 
 typedef int Opcode;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
 		char name[SIZE];
 		int lvl;
 		int totalExp;
 		int currentExp;
 } Character;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
 		char username[SIZE];
 		char password[SIZE];
 } User;

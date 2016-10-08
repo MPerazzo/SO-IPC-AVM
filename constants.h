@@ -4,6 +4,8 @@
 
 typedef enum { false, true } bool;
 
+enum explvls { lvl1=10, lvl2=20, lvl3=40, lvl4=80, lvl5=160, lvl6=340, lvl7=680, lvl8=1360, lvl9=2720, lvl10=5440 };
+
 /*Game States*/
 #define USER_LOGIN 0
 #define CHAR_SELECTION 1
@@ -33,7 +35,9 @@ typedef enum { false, true } bool;
 #define EXIT_AND_LOGOUT 300
 #define LOGOUT 400
 
-/*length or sizes*/
+#define CONNECTION_INTERRUMPED 555
+
+/*lengths, sizes and others*/
 #define CANT_ARGS 5
 #define COMM_SIZE 10
 #define STATES 6
@@ -48,5 +52,6 @@ typedef enum { false, true } bool;
 #define KEY_LENGTH 3
 #define BUFF_SIZE 20
 #define LIMIT_TOSAVE 10
+#define QUERY_SIZE 200
 
 #endif

@@ -23,18 +23,10 @@ Data * db_receiveData(DBConnection *);
 
 char * getaddress();
 
-int session_ended = 0;
+int session_ended = false;
 
-<<<<<<< HEAD
-=======
-int semaphore_id;
-
->>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
 Data * data_from_client;
 Data * data_to_client;
-
-char character[100];
-int totalExp;
 
 Listener * listener;
 Connection * connection;
@@ -58,11 +50,6 @@ int main(int argc, char *argv[]) {
 
     sndMessage("initializing server", INFO_TYPE);
 
-<<<<<<< HEAD
-=======
-    semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
-
->>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
 	listener = comm_listen(address);
 
 	if (listener == NULL) {
@@ -109,12 +96,6 @@ void newSession(Connection * connection) {
 
 	while (1) {
 
-		while (1) {
-			char buffer[40];
-			sprintf(buffer, "GG %d", getpid());
-			sndMessage(buffer, 1);
-		}
-
 		data_from_client = receiveData(connection);
 
 		server_process_data();
@@ -123,7 +104,7 @@ void newSession(Connection * connection) {
 
 		if(session_ended) {
 
-			comm_disconnect(connection);
+			server_close();
 
 			return ;
 
@@ -172,7 +153,7 @@ void server_process_data() {
 		printf("[session %d] session ended\n", getpid());
 		sndMessage("server session ended", INFO_TYPE);
 
-		session_ended = 1;
+		session_ended = true;
 
 	} else if(data_from_client->opcode == EXIT_AND_LOGOUT) {
 
@@ -181,18 +162,20 @@ void server_process_data() {
 
 		communicate_with_database();
 
-		session_ended = 1;
-	}
+		session_ended = true;
+	
+	} else if(data_from_client->opcode == CONNECTION_INTERRUMPED) {
 
+		printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
+
+		sndMessage("Server is logged out by kill on client", WARNING_TYPE);
+
+		exit(1);
+	}
 }
 
 void communicate_with_database() {
 
-<<<<<<< HEAD
-=======
-	binary_semaphore_wait(semaphore_id);
-
->>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
 	db_connection = db_comm_connect(getaddress("DBSV"));
 
 	if(db_connection == NULL) {
@@ -200,7 +183,6 @@ void communicate_with_database() {
 		sndMessage("couldn't connect to database", ERROR_TYPE);
 
 		exit(1);
-
 	}
 
 	db_sendData(db_connection, data_from_client);
@@ -208,18 +190,19 @@ void communicate_with_database() {
 	data_to_client = db_receiveData(db_connection);
 
 	db_comm_disconnect(db_connection);
+}
 
-<<<<<<< HEAD
-=======
-	binary_semaphore_post(semaphore_id);
-
->>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
+void server_close() {
+	comm_disconnect(connection);
+	free(connection);
 }
 
 void srv_sigRutine(int sig) {
 
     sndMessage("Server logged out by kill()", WARNING_TYPE);
-    
-    exit(1);
 
+    printf("\n");
+    printf("Server proccess with pid: %d terminated\n", getpid());
+
+    exit(1);
 }

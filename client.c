@@ -23,7 +23,6 @@ void point();
 void quit();
 void logOut();
 void help();
-void freeData();
 
 Data * loginC(char *,char *, Connection *);
 Data * createAccountC(char *, char *, Connection *);
@@ -37,6 +36,7 @@ void logoutC(char *, Connection *);
 
 void run_session();
 char * getaddress(char *);
+void clt_sigRutine(int);
 
 Data * newData(Opcode opcode);
 Data * receiveData(Connection *);
@@ -53,20 +53,24 @@ struct command {
 
 struct command commands[COMM_SIZE] = {};
 
-int levelsExp[LEVEL_MAX] = {10, 20, 40, 80, 160, 340, 680, 1360, 2720, 5440};
-
+int levelsExp[LEVEL_MAX] = {lvl1, lvl2, lvl3, lvl4, lvl5, lvl6, lvl7, lvl8, lvl9, lvl10}; // enum in constants.h 	
 int session_state;
-
-char * address;
-Connection * connection;
-Data * data_from_server;
+int counter;
 
 Character character;
 char username[SIZE];
 char user_input[BUFFERSIZE];
-int counter;
+
+bool connected;
+char * address;
+Connection * connection;
+Data * data_from_server;
 
 void main(int argc, char *argv[]) {
+
+	connected=false;
+
+    signal(SIGINT, clt_sigRutine);
 
     address = getaddress("SV");
 
@@ -74,7 +78,14 @@ void main(int argc, char *argv[]) {
 
     connection = comm_connect(address);
 
-    printf("[client] connection established\n");
+     if (connection == NULL) {
+     	printf("Couldn´t connect to server!\n");
+        exit(1);
+     }
+
+    connected=true;
+
+    printf("[client] connection established, write help to see commands.\n");
 
     run_session();
 
@@ -125,13 +136,13 @@ void loadCommands() {
     commands[3].function = (func)&createCharacter;
     commands[3].cantArgs = 1;
     commands[3].actionOnState[CHAR_SELECTION] = 1;
-    strcpy(commands[3].description, "Parameters: [STRING]name\nDescription: Creates a character with the name that you typing.\n");
+    strcpy(commands[3].description, "Parameters: [STRING]name\nDescription: Creates a character with that name.\n");
 
     commands[4].name = "deletechar";
     commands[4].function = (func)&deleteCharacter;
     commands[4].cantArgs = 1;
     commands[4].actionOnState[CHAR_SELECTION] = 1;
-    strcpy(commands[4].description, "Parameters: [STRING]name\nDescription: Delete a character with the name that you typing.\n");
+    strcpy(commands[4].description, "Parameters: [STRING]name\nDescription: Deletes the character that matches the name.\n");
     
     commands[5].name = "showchar";
     commands[5].function = (func)&showCharacters;
@@ -297,7 +308,7 @@ void login(char * account, char * password) {
 
     }
 
-    freeData();
+    free(data_from_server);
 }
 
 void createAccount(char * account, char * password) {
@@ -321,7 +332,7 @@ void createAccount(char * account, char * password) {
         printf("[client] Your account been created successfully.\n");
     }
 
-    freeData();
+    free(data_from_server);
 }
 
 void selectCharacter(char * name) {
@@ -337,11 +348,11 @@ void selectCharacter(char * name) {
 
     if(data_from_server->opcode == CHAR_DOESNT_EXIST){
 
-        printf("[client] Character doesnt exist. try again.\n");
+        printf("[client] Character with that name does not exist. hint: use showchar command.\n");
 
     } else if(data_from_server->opcode == CHAR_BUSY) {
 
-        printf("[client] character is being played with by another client\n");
+        printf("[client] Character is being played with by another client\n");
 
     } else if(data_from_server->opcode == NO_ERROR) {
 
@@ -355,7 +366,7 @@ void selectCharacter(char * name) {
         printf("[client] Now you are playing. If you don´t know how to play use help. ENJOY!\n");
     }
 
-    freeData();
+    free(data_from_server);
 }
 
 void createCharacter(char * name) {
@@ -371,11 +382,11 @@ void createCharacter(char * name) {
 
     if(data_from_server->opcode == CHAR_ALREADY_EXISTS){
 
-        printf("[client] character already exists. try again\n");
+        printf("[client] A character with that name already exists. Try with other name\n");
 
     } else if(data_from_server->opcode == TOO_MANY_CHARS) {
 
-        printf("[client] You can not have more characters than 5\n");
+        printf("[client] You can not have more characters than five.\n");
         
     } if(data_from_server->opcode == NO_ERROR) {
 
@@ -383,7 +394,7 @@ void createCharacter(char * name) {
     }
 
 
-    freeData();
+    free(data_from_server);
 
 }
 
@@ -400,19 +411,19 @@ void deleteCharacter(char * name) {
 
     if(data_from_server->opcode == CHAR_DOESNT_EXIST){
 
-        printf("[client] character doesnt exist. try again.\n");
+        printf("[client] Character with that name does not exist. hint: use showcharacters command.\n");
 
     } else if(data_from_server->opcode == CHAR_BUSY) {
 
-        printf("[client] character is being played with by another client.\n");
+        printf("[client] Character is being played with by another client.\n");
 
     } else {
 
-        printf("[client] successfully deleted character.\n");
+        printf("[client] Successfully deleted character.\n");
 
     }
 
-    freeData();
+    free(data_from_server);
 }
 
 void showCharacters() {
@@ -439,7 +450,7 @@ void showCharacters() {
 
     }
 
-    freeData();*/
+    free(data_from_server);*/
 }
 
 void point() {
@@ -509,7 +520,6 @@ void quit() {
 
 void logOut() {
 
-
     if(session_state == CHAR_SELECTION) {
 
         logoutC(username, connection);
@@ -543,6 +553,25 @@ void help() {
     }
 }
 
-void freeData() {
-    free(data_from_server);
+void client_close() {
+    if (connected) {
+        comm_disconnect(connection);
+        free(connection);
+    }
+}
+
+void clt_sigRutine(int sig) {
+
+    Data * new_data = newData(CONNECTION_INTERRUMPED);
+    
+    if (sendData(connection, new_data)<0)
+    	printf("WTF\n");
+    
+    client_close();
+
+    free(new_data);
+    
+    printf("\n");
+    printf("Client proccess with pid: %d terminated\n", getpid());
+    exit(1); 
 }

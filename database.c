@@ -35,9 +35,10 @@ Data * db_receiveData(DBConnection *);
 
 sqlite3 *db;
 char *err_msg = 0;
-char query[200];
+char query[QUERY_SIZE];
 int rc;
-int semaphore_id;
+
+
 DBListener * db_listener;
 DBConnection * db_connection;
 Data * data;
@@ -54,13 +55,6 @@ int main(void) {
 
     pthread_mutex_init(&mutex, NULL);
 
-<<<<<<< HEAD
-=======
-    //semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
-
-    //binary_semaphore_initialize (semaphore_id);
-
->>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
     printf("[database] awaiting connections\n");
 
     while(1) {
@@ -76,11 +70,6 @@ int main(void) {
         db_comm_disconnect(db_connection);
 
     }
-<<<<<<< HEAD
-=======
-
-    //binary_semaphore_deallocate(semaphore_id);
->>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
     
     sqlite3_close(db);
     
@@ -102,7 +91,7 @@ void initialize_table() {
         return;
     }
 
-    char sql[200];
+    char sql[QUERY_SIZE];
 
     strcpy(sql, "CREATE TABLE User(Name TEXT PRIMARY KEY, Password TEXT, CantChar INTEGER, Inuse INTEGER)");
     
@@ -210,7 +199,7 @@ void process_data() {
 }
 
 void login() {
-    printf("%s, %s\n", data->user.username, data->user.password);
+
     sprintf(query, "SELECT * FROM User WHERE name = '%s' AND password = '%s'", data->user.username, data->user.password);
 
     rc = sqlite3_exec(db, query, login_callback, 0, &err_msg);
@@ -243,7 +232,7 @@ int login_callback(void *NotUsed, int argc, char **argv, char **azColName) {
 }
 
 void create_account() {
-    printf("%s, %s\n", data->user.username, data->user.password);
+
     sprintf(query, "INSERT INTO User VALUES('%s', '%s', 0, 0)", data->user.username, data->user.password);
 
     rc = sqlite3_exec(db, query, login_callback, 0, &err_msg);
@@ -265,7 +254,7 @@ int create_account_callback(void *NotUsed, int argc, char **argv, char **azColNa
 }
 
 void create_char() {
-    printf("%s, %s\n", data->user.username, data->character.name);
+
     sprintf(query, "SELECT * FROM User WHERE Name = '%s'", data->user.username);   
 
     rc = sqlite3_exec(db, query, create_account_callback, 0, &err_msg);
@@ -300,7 +289,7 @@ void create_char() {
 }
 
 void select_char() {
-    printf("%s, %s\n", data->user.username, data->character.name);
+
     sprintf(query, "SELECT * FROM Chars WHERE Id='%s' AND Name = '%s'", data->character.name, data->user.username);
 
     rc = sqlite3_exec(db, query, select_callback, 0, &err_msg);
@@ -337,7 +326,7 @@ int select_callback(void *NotUsed, int argc, char **argv, char **azColName) {
 }
 
 void delete_char() {
-    printf("%s, %s\n", data->user.username, data->character.name);
+
     sprintf(query, "SELECT * FROM Chars WHERE Id='%s' AND Name='%s'", data->character.name, data->user.username);
 
     rc = sqlite3_exec(db, query, delete_callback, 0, &err_msg);
@@ -369,7 +358,7 @@ int delete_callback(void *NotUsed, int argc, char **argv, char **azColName) {
 }
 
 void logout() {
-    printf("%s\n", data->user.username);
+
     sprintf(query, "UPDATE Chars SET Inuse=0 WHERE Name='%s'", data->user.username);
 
     sqlite3_exec(db, query, 0, 0, &err_msg);
