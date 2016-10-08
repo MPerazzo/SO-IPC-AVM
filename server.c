@@ -9,6 +9,7 @@
 #include "databasecomm.h"
 #include "daemon.h"
 #include "constants.h"
+#include "semaphores.h"
 
 void srv_sigRutine(int);
 void initDB_calls();
@@ -24,6 +25,11 @@ char * getaddress();
 
 int session_ended = 0;
 
+<<<<<<< HEAD
+=======
+int semaphore_id;
+
+>>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
 Data * data_from_client;
 Data * data_to_client;
 
@@ -46,10 +52,17 @@ int main(int argc, char *argv[]) {
 
     	printf("Couldn´t create message queue for logging daemon\n");
 
+    	exit(1);
+
     }
 
-    sndMessage("Server initialized", 1);
+    sndMessage("initializing server", INFO_TYPE);
 
+<<<<<<< HEAD
+=======
+    semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
+
+>>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
 	listener = comm_listen(address);
 
 	if (listener == NULL) {
@@ -122,7 +135,15 @@ void newSession(Connection * connection) {
 
 void server_process_data() {
 
-	if(data_from_client->opcode == SELECT_CHARACTER) {
+	if(data_from_client->opcode == LOGIN) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == CREATE_ACCOUNT) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == SELECT_CHARACTER) {
 
 		communicate_with_database();
 
@@ -134,7 +155,15 @@ void server_process_data() {
 
 		communicate_with_database();
 
+	} else if(data_to_client->opcode == SHOW_CHARACTER) {
+
+		communicate_with_database();
+
 	} else if(data_from_client->opcode == EXP_UP) {
+
+		communicate_with_database();
+
+	} else if(data_from_client->opcode == LOGOUT) {
 
 		communicate_with_database();
 
@@ -153,13 +182,17 @@ void server_process_data() {
 		communicate_with_database();
 
 		session_ended = 1;
-
 	}
 
 }
 
 void communicate_with_database() {
 
+<<<<<<< HEAD
+=======
+	binary_semaphore_wait(semaphore_id);
+
+>>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
 	db_connection = db_comm_connect(getaddress("DBSV"));
 
 	if(db_connection == NULL) {
@@ -176,11 +209,16 @@ void communicate_with_database() {
 
 	db_comm_disconnect(db_connection);
 
+<<<<<<< HEAD
+=======
+	binary_semaphore_post(semaphore_id);
+
+>>>>>>> de2be990841ce48ed0c92a66771a3aea4109efe4
 }
 
 void srv_sigRutine(int sig) {
 
-	sndMessage("Server logged out by kill()", WARNING_TYPE);
+    sndMessage("Server logged out by kill()", WARNING_TYPE);
     
     exit(1);
 

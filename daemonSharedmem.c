@@ -9,6 +9,7 @@ Message.type:
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -16,6 +17,7 @@ Message.type:
 #include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 #include "daemon.h"
 #include "types.h"
@@ -53,7 +55,9 @@ sem_t * daemon_sem;
 
 // mutex
 
-int mutex;
+pthread_mutex_t * mutex = NULL;
+
+pthread_mutexattr_t attrmutex;
 
 
 int initLogin(bool is_daemonSrv) {
@@ -82,11 +86,23 @@ int dSrv_initLogin() {
 		return -1;
 	}
 
+	printf("WTF1\n");
+
+	pthread_mutexattr_init(&attrmutex);
+
+	printf("WTF2\n");
+	
+	pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
+
+	printf("WTF3\n");
+
+	mutex = malloc(sizeof(mutex));
+
+	pthread_mutex_init(mutex, &attrmutex);
+
+	printf("WTF2\n");
+
 	shm_id = shmget(shm_key, shm_size, IPC_CREAT | SHM_W | SHM_R);
-
-	mutex = binary_semaphore_allocation(666, IPC_RMID);
-
-    binary_semaphore_initialize(mutex);
 
 	shm_address = (char*) shmat (shm_id, NULL, 0);
 
@@ -95,13 +111,21 @@ int dSrv_initLogin() {
 
 int other_initLogin() {
 
-	mutex = binary_semaphore_allocation (666, IPC_RMID);
-	
+	mutex = malloc(sizeof(mutex));
+
 	if ((daemon_sem = sem_open("mySemprobando", O_CREAT)) == SEM_FAILED) {
 		printf("sem_open failed\n");
 		perror("Error");
 		return -1;
 	}
+
+	pthread_mutexattr_init(&attrmutex);
+
+	pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
+
+	pthread_mutex_init(mutex, &attrmutex);
+
+	printf("WTF2\n");
 
 	shm_id = shmget(shm_key, shm_size, IPC_CREAT | SHM_W | SHM_R);
 
@@ -113,7 +137,7 @@ int other_initLogin() {
 
 int sndMessage(char * message, int type) {
 
-	binary_semaphore_wait(mutex);
+    pthread_mutex_lock(mutex);
 
 	shm_position = shm_address + sizeof(args_size);
 
@@ -159,7 +183,7 @@ int rcvMessage(int type) {
 	char * shared_pid = shm_position;
 
 	if ( type != 0 && atoi(shared_type) != type) {
-		binary_semaphore_post(mutex);
+		pthread_mutex_unlock(mutex);
 		return -1;
 	}
 
@@ -171,7 +195,7 @@ int rcvMessage(int type) {
 
 	msg.svpid = atoi(shared_pid);
 
-	binary_semaphore_post(mutex);
+	pthread_mutex_unlock(mutex);
 
 	return 0;
 }

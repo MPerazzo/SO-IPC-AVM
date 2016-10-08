@@ -7,13 +7,23 @@ typedef int Opcode;
 
 typedef struct {
 		char name[SIZE];
+		int lvl;
 		int totalExp;
+		int currentExp;
 } Character;
+
+typedef struct {
+		char username[SIZE];
+		char password[SIZE];
+} User;
 
 typedef struct __attribute__((__packed__)) {
 	int sender_pid;
 	Opcode opcode;
+	Character characters[MAX_CHARACTERS];
 	Character character;
+	int cantChars;
+	User user;
 } Data;
 
 typedef struct __attribute__((__packed__)) {

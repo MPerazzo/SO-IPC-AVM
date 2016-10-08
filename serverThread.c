@@ -27,8 +27,6 @@ char * getaddress();
 
 int session_ended = 0;
 
-//int semaphore_id;
-
 Data * data_from_client;
 Data * data_to_client;
 
@@ -62,8 +60,6 @@ int main(int argc, char *argv[]) {
     }
 
     sndMessage("Server initialized", 1);
-
-    // semaphore_id = binary_semaphore_allocation (666, IPC_RMID);
 
 	listener = comm_listen(address);
 
@@ -106,6 +102,12 @@ void * newSession(void * args) {
 	int aux = session;
 
 	while (1) {
+
+		while (1) {
+			char buffer[40];
+			sprintf(buffer, "GG %d", aux);
+			sndMessage(buffer, 1);
+		}
 
 		data_from_client = receiveData(current_connection);
 
@@ -177,8 +179,6 @@ void server_process_data() {
 
 void communicate_with_database() {
 
-	// binary_semaphore_wait(semaphore_id);
-
 	db_connection = db_comm_connect(getaddress("DBSV"));
 
 	if(db_connection == NULL) {
@@ -194,8 +194,6 @@ void communicate_with_database() {
 	data_to_client = db_receiveData(db_connection);
 
 	db_comm_disconnect(db_connection);
-
-	// binary_semaphore_post(semaphore_id);
 
 }
 
