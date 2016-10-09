@@ -14,6 +14,7 @@ int initLogin();
 int sndMessage(char *, int type);
 int rcvMessage(int type);
 void printMessage();
+void close_daemon();
 
 #endif
 

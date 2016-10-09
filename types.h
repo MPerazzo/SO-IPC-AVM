@@ -3,6 +3,8 @@
 
 #include "constants.h"
 
+typedef enum { false, true } bool;
+
 typedef int Opcode;
 
 typedef struct __attribute__((__packed__)) {

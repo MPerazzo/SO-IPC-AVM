@@ -19,6 +19,8 @@ Message.mtype:
 #include "daemon.h"
 #include "types.h"
 
+void dSrv_close();
+void other_close();
 
 struct Message
 {
@@ -116,6 +118,12 @@ int rcv_WarningMessage() {
 
 int rcv_ErrorMessage() {
 	return rcvMessage(ERROR_TYPE);
+}
+
+void close_daemon() {
+/* function not implemented, queues are not closed so when daemonServer loggs reads all the messages
+ stored in the queue. No messages are lost, never, ever.
+*/
 }
 
 char * typetoString(long type) {	

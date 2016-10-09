@@ -9,7 +9,6 @@ Message.type:
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -17,12 +16,15 @@ Message.type:
 #include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <pthread.h>
 
 #include "daemon.h"
 #include "types.h"
 #include "semaphores.h"
 
+void dSrv_close();
+void other_close();
 
 struct Message
 {
@@ -34,6 +36,8 @@ struct Message
 Message msg;
 
 bool is_dSrv;
+
+bool error;
 
 // sharedMemory variables
 
@@ -55,9 +59,7 @@ sem_t * daemon_sem;
 
 // mutex
 
-pthread_mutex_t * mutex = NULL;
-
-pthread_mutexattr_t attrmutex;
+int mutex;
 
 
 int initLogin(bool is_daemonSrv) {
@@ -80,27 +82,17 @@ int initLogin(bool is_daemonSrv) {
 
 int dSrv_initLogin() {
 
-	if ((daemon_sem = sem_open("mySemprobando", O_CREAT,  S_IRUSR | S_IWUSR, 1)) == SEM_FAILED) {
+	sem_unlink("SemDaemon");
+
+	if ((daemon_sem = sem_open("SemDaemon", O_CREAT,  S_IRUSR | S_IWUSR, 0)) == SEM_FAILED) {
 		printf("sem_open failed\n");
 		perror("Error.");
 		return -1;
 	}
 
-	printf("WTF1\n");
+	mutex = binary_semaphore_allocation(666, IPC_RMID);
 
-	pthread_mutexattr_init(&attrmutex);
-
-	printf("WTF2\n");
-	
-	pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
-
-	printf("WTF3\n");
-
-	mutex = malloc(sizeof(mutex));
-
-	pthread_mutex_init(mutex, &attrmutex);
-
-	printf("WTF2\n");
+    binary_semaphore_initialize(mutex);
 
 	shm_id = shmget(shm_key, shm_size, IPC_CREAT | SHM_W | SHM_R);
 
@@ -110,22 +102,15 @@ int dSrv_initLogin() {
 }
 
 int other_initLogin() {
-
-	mutex = malloc(sizeof(mutex));
-
-	if ((daemon_sem = sem_open("mySemprobando", O_CREAT)) == SEM_FAILED) {
+	
+	if ((daemon_sem = sem_open("SemDaemon", O_CREAT)) == SEM_FAILED) {
+		error = true;
 		printf("sem_open failed\n");
 		perror("Error");
 		return -1;
 	}
 
-	pthread_mutexattr_init(&attrmutex);
-
-	pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
-
-	pthread_mutex_init(mutex, &attrmutex);
-
-	printf("WTF2\n");
+	mutex = binary_semaphore_allocation (666, IPC_RMID);
 
 	shm_id = shmget(shm_key, shm_size, IPC_CREAT | SHM_W | SHM_R);
 
@@ -137,7 +122,10 @@ int other_initLogin() {
 
 int sndMessage(char * message, int type) {
 
-    pthread_mutex_lock(mutex);
+	if (error) // to avoid segm fault if server is running before daemonServer as it would be using a sem not initialized.
+		return;
+
+	binary_semaphore_wait(mutex);
 
 	shm_position = shm_address + sizeof(args_size);
 
@@ -183,7 +171,7 @@ int rcvMessage(int type) {
 	char * shared_pid = shm_position;
 
 	if ( type != 0 && atoi(shared_type) != type) {
-		pthread_mutex_unlock(mutex);
+		binary_semaphore_post(mutex);
 		return -1;
 	}
 
@@ -195,7 +183,7 @@ int rcvMessage(int type) {
 
 	msg.svpid = atoi(shared_pid);
 
-	pthread_mutex_unlock(mutex);
+	binary_semaphore_post(mutex);
 
 	return 0;
 }
@@ -210,6 +198,35 @@ int rcv_WarningMessage() {
 
 int rcv_ErrorMessage() {
 	return rcvMessage(ERROR_TYPE);
+}
+
+void close_daemon() {
+
+switch (is_dSrv) {
+
+	case true: {
+		dSrv_close();
+	}
+
+	case false:
+		other_close();
+	}
+
+}
+
+void dSrv_close() {
+
+    shmdt(shm_address);
+
+    shmctl(shm_id , IPC_RMID , NULL);
+
+	binary_semaphore_deallocate(mutex);
+
+	sem_close(daemon_sem);
+}
+
+void other_close() {
+	sem_close(daemon_sem);
 }
 
 char * typetoString(int type) {	

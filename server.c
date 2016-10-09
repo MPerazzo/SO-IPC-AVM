@@ -42,9 +42,7 @@ int main(int argc, char *argv[]) {
 
     if (initLogin(false) == -1) {
 
-    	printf("Couldn´t create message queue for logging daemon\n");
-
-    	exit(1);
+    	printf("Couldn´t connect to logging daemon\n");
 
     }
 
@@ -74,7 +72,6 @@ int main(int argc, char *argv[]) {
 			exit(1);
 
 		}
-
 		int newpid = fork();
 
 		if(newpid == 0) {
@@ -167,7 +164,6 @@ void server_process_data() {
 	} else if(data_from_client->opcode == CONNECTION_INTERRUMPED) {
 
 		printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
-
 		sndMessage("Server is logged out by kill on client", WARNING_TYPE);
 
 		exit(1);
@@ -200,6 +196,8 @@ void server_close() {
 void srv_sigRutine(int sig) {
 
     sndMessage("Server logged out by kill()", WARNING_TYPE);
+
+    close_daemon();
 
     printf("\n");
     printf("Server proccess with pid: %d terminated\n", getpid());

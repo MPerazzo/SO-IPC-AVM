@@ -48,23 +48,20 @@ Connection * comm_connect(char * address) {
     unlink(client_outgoing);
 
     if (mknod(client_incoming, S_IFIFO | 0666, 0) == -1) {
-
+        perror("Couldn´t create client incoming named pipe. Error");
         return NULL;
-
     }
     
     if (mknod(client_outgoing, S_IFIFO | 0666, 0) == -1) {
-
+        perror("Couldn´t create client outgoing named pipe. Error");
         return NULL;
-
     }
 
     listener_fd = open(address, O_WRONLY);
 
     if(write(listener_fd, &connectionRequest, sizeof(ConnectionRequest)) == -1) {
-
+        perror("Couldn´t write to listener_fd. Error");
         return NULL;
-
     }
 
     close(listener_fd);
@@ -75,9 +72,8 @@ Connection * comm_connect(char * address) {
     connection->outgoing_fd = open(client_outgoing, O_WRONLY);
 
     if(connection->outgoing_fd == -1 || connection->incoming_fd == -1) {
-
+        perror("Couldn´t open incoming or outgoing fifos for client. Error");
         return NULL;
-
     }
 
     return connection;
@@ -93,9 +89,8 @@ Listener * comm_listen(char * address) {
     unlink(address);
 
     if (mknod(address, S_IFIFO | 0666, 0) == -1) {
-
+      perror("Couldn´t create server private named pipe. Error");
       return NULL;
-
     }
 
     strcpy(listener->address, address);
@@ -116,9 +111,8 @@ Connection * comm_accept(Listener * listener) {
     listener_fd = open(listener->address, O_RDONLY);
 
     if(read(listener_fd, &connectionRequest, sizeof(ConnectionRequest)) == -1) {
-
+        perror("Couldn´t read from listener_fd. Error");
         return NULL;
-
     }
     
     close(listener_fd);
@@ -130,9 +124,8 @@ Connection * comm_accept(Listener * listener) {
     connection->incoming_fd = open(client_outgoing, O_RDONLY);
 
     if(connection->outgoing_fd == -1 || connection->incoming_fd == -1) {
-
+        perror("Couldn´t open client_outgoing or client_outgoing fifos to accept comm. Error")
         return NULL;
-
     }
 
     return connection;

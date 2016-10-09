@@ -2,8 +2,6 @@
 #ifndef _CONSTANTS_H
 #define _CONSTANTS_H
 
-typedef enum { false, true } bool;
-
 enum explvls { lvl1=10, lvl2=20, lvl3=40, lvl4=80, lvl5=160, lvl6=340, lvl7=680, lvl8=1360, lvl9=2720, lvl10=5440 };
 
 /*Game States*/
