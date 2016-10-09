@@ -223,6 +223,9 @@ void dSrv_close() {
 	binary_semaphore_deallocate(mutex);
 
 	sem_close(daemon_sem);
+
+	sem_unlink("SemDaemon");
+
 }
 
 void other_close() {

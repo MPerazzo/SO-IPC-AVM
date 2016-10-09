@@ -150,12 +150,16 @@ void server_process_data() {
 		printf("[session %d] session ended\n", getpid());
 		sndMessage("server session ended", INFO_TYPE);
 
+	    server_close();
+
 		session_ended = true;
 
 	} else if(data_from_client->opcode == EXIT_AND_LOGOUT) {
 
 		printf("[session %d] session ended\n", getpid());
 		sndMessage("server session ended", INFO_TYPE);
+
+	    server_close();
 
 		communicate_with_database();
 
@@ -165,6 +169,8 @@ void server_process_data() {
 
 		printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
 		sndMessage("Server is logged out by kill on client", WARNING_TYPE);
+
+	    server_close();
 
 		exit(1);
 	}
@@ -191,6 +197,7 @@ void communicate_with_database() {
 void server_close() {
 	comm_disconnect(connection);
 	free(connection);
+    close_daemon();
 }
 
 void srv_sigRutine(int sig) {
