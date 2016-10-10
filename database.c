@@ -372,7 +372,6 @@ void logout() {
 }
 
 void char_exp_up() {
-    printf("%s, %d, %d, %d\n", data->character.name, data->character.lvl, data->character.totalExp, data->character.currentExp);
     sprintf(query, "UPDATE Chars SET Level=%d, TotalExp=%d, CurrentExp=%d WHERE Id='%s'", data->character.lvl, data->character.totalExp, data->character.currentExp, data->character.name);
     sqlite3_exec(db, query, 0, 0, &err_msg);
 
