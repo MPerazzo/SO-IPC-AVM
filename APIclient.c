@@ -112,10 +112,7 @@ void expUpC(Character character, char * account, Connection * connection) {
 
 	communicate(connection, data_to_send);
 
-    free(data_to_send);
-
-    return;
-  
+    free(data_to_send);  
 }
 
 void quitC(char * account, Connection * connection, bool logout) {
