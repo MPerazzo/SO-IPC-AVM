@@ -31,7 +31,7 @@ Data * createCharacterC(char *, char *, Connection *);
 Data * deleteCharacterC(char *, char *, Connection *);
 Data * showCharactersC(char *, Connection *);
 void expUpC(Character, char *, Connection *);
-void quitC(char *, Connection *, int);
+void quitC(char *, Connection *, bool);
 void logoutC(char *, Connection *);
 
 void run_session();
@@ -498,16 +498,16 @@ void quit() {
 
     if(session_state == USER_LOGIN) {
 
-        quitC(username, connection, 0);
+        quitC(username, connection, false);
 
     } else if(session_state == CHAR_SELECTION) {
 
-        quitC(username, connection, 1);
+        quitC(username, connection, true);
 
     } else if(session_state == PLAY_GAME) {
 
         expUpC(character, username, connection);
-        quitC(username, connection, 1);
+        quitC(username, connection, true);
 
     }
 

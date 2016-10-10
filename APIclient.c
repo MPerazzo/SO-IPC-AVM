@@ -102,7 +102,6 @@ Data * showCharactersC(char * account, Connection * connection) {
 void expUpC(Character character, char * account, Connection * connection) {
 
     Data * data_to_send = newData(EXP_UP);
-    Data * data_from_server;
 
     strcpy(data_to_send->character.name, character.name);
     data_to_send->character.lvl = character.lvl;
@@ -111,7 +110,7 @@ void expUpC(Character character, char * account, Connection * connection) {
 
     strcpy(data_to_send->user.username, account);
 
-    data_from_server = communicate(connection, data_to_send);
+	communicate(connection, data_to_send);
 
     free(data_to_send);
 
@@ -119,18 +118,17 @@ void expUpC(Character character, char * account, Connection * connection) {
   
 }
 
-void quitC(char * account, Connection * connection, int logout) {
+void quitC(char * account, Connection * connection, bool logout) {
     
     Data * data_to_send;
-    Data * data_from_server;
 
-    if(logout == 1) {
+    if(logout == true) {
 
         data_to_send = newData(EXIT_AND_LOGOUT);
 
         strcpy(data_to_send->user.username, account);
 
-        data_from_server = communicate(connection, data_to_send);
+        communicate(connection, data_to_send);
 
 
     } else {
@@ -141,22 +139,17 @@ void quitC(char * account, Connection * connection, int logout) {
     }
 
     free(data_to_send);
-
-    return;
 }
 
 void logoutC(char * account, Connection * connection) {
     
     Data * data_to_send = newData(LOGOUT);
-    Data * data_from_server;
 
     strcpy(data_to_send->user.username, account);
 
-    data_from_server = communicate(connection, data_to_send);
+    communicate(connection, data_to_send);
 
     free(data_to_send);
-
-    return;
 }
 
 Data * communicate(Connection * conn, Data * tosend) {
