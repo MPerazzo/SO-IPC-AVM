@@ -16,12 +16,20 @@ void initDB_calls();
 void newSession(Connection *);
 void server_close();
 void server_process_data();
-void communicate_with_database();
 
+char * getaddress();
 Data * receiveData(Connection *);
 Data * db_receiveData(DBConnection *);
 
-char * getaddress();
+void loginC();
+void createaccountC();
+void createcharC();
+void deletecharC();
+void showcharC();
+void selectcharC();
+void expUpC();
+void logoutC();
+void exitC();
 
 int session_ended = false;
 
@@ -113,66 +121,83 @@ void newSession(Connection * connection) {
 
 void server_process_data() {
 
-	if(data_from_client->opcode == LOGIN) {
+	switch(data_from_client->opcode) {
 
-		communicate_with_database();
+		case LOGIN:
 
-	} else if(data_from_client->opcode == CREATE_ACCOUNT) {
+			loginC();
+			break;
 
-		communicate_with_database();
+		case CREATE_ACCOUNT:
 
-	} else if(data_from_client->opcode == SELECT_CHARACTER) {
+			createaccountC();
+			break;
 
-		communicate_with_database();
+		case CREATE_CHARACTER:
 
-	} else if(data_from_client->opcode == CREATE_CHARACTER) {
+			createcharC();
+			break;
+		
+		case DELETE_CHARACTER:
 
-		communicate_with_database();
+			deletecharC();
+			break;
 
-	} else if(data_from_client->opcode == DELETE_CHARACTER) {
+		case SHOW_CHARACTER:
 
-		communicate_with_database();
+			showcharC();
+			break;
 
-	} else if(data_to_client->opcode == SHOW_CHARACTER) {
+		case SELECT_CHARACTER:
 
-		communicate_with_database();
+			selectcharC();
+			break;
 
-	} else if(data_from_client->opcode == EXP_UP) {
+		case EXP_UP:
 
-		communicate_with_database();
+			expUpC();
+			break;
+		
+		case LOGOUT:
 
-	} else if(data_from_client->opcode == LOGOUT) {
+			logoutC();
+			break;
 
-		communicate_with_database();
+		case EXIT:
 
-	} else if(data_from_client->opcode == EXIT) {
+			printf("[session %d] session ended\n", getpid());
+			sndMessage("server session ended", INFO_TYPE);
 
-		printf("[session %d] session ended\n", getpid());
-		sndMessage("server session ended", INFO_TYPE);
+		    exitC();
 
-	    server_close();
+			session_ended = true;
 
-		session_ended = true;
+			break;
 
-	} else if(data_from_client->opcode == EXIT_AND_LOGOUT) {
+		case EXIT_AND_LOGOUT:
 
-		printf("[session %d] session ended\n", getpid());
-		sndMessage("server session ended", INFO_TYPE);
+			printf("[session %d] session ended\n", getpid());
+			sndMessage("server session ended", INFO_TYPE);
 
-	    server_close();
+			logoutC();
 
-		communicate_with_database();
+		    exitC();
 
-		session_ended = true;
-	
-	} else if(data_from_client->opcode == CONNECTION_INTERRUMPED) {
+			session_ended = true;
 
-		printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
-		sndMessage("Server is logged out by kill on client", WARNING_TYPE);
+			break;
 
-	    server_close();
+		case CONNECTION_INTERRUMPED:
 
-		exit(1);
+			printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
+			sndMessage("Server is logged out by kill on client", WARNING_TYPE);
+
+		    server_close();
+
+			exit(1);
+
+		default:
+			printf("Opcode not supported\n");
 	}
 }
 
