@@ -124,75 +124,83 @@ void process_data() {
 
     pthread_mutex_lock(&mutex);
 
-    if(data->opcode == LOGIN) {
+    switch(data->opcode) {
 
-        printf("[database] processing LOGIN request from server session %d\n", data->sender_pid);
+        case LOGIN:
 
-        login();
+            printf("[database] processing LOGIN request from server session %d\n", data->sender_pid);
 
-    } 
+            login();
 
-    else if(data->opcode == CREATE_ACCOUNT){
+            break;
 
-        printf("[database] processing CREATE_ACCOUNT request from server session %d\n", data->sender_pid);
+        case CREATE_ACCOUNT:
 
-        create_account();
+            printf("[database] processing CREATE_ACCOUNT request from server session %d\n", data->sender_pid);
 
-    } 
+            create_account();
 
-    else if(data->opcode == SELECT_CHARACTER) {
+            break;
 
-        printf("[database] processing SELECT_CHARACTER request from server session %d\n", data->sender_pid);
+        case SELECT_CHARACTER:
 
-        select_char();
+            printf("[database] processing SELECT_CHARACTER request from server session %d\n", data->sender_pid);
 
-    } 
+            select_char();
 
-    else if(data->opcode == CREATE_CHARACTER) {
+            break;
+   
+        case CREATE_CHARACTER:
 
-        printf("[database] processing CREATE_CHARACTER request from server session %d\n", data->sender_pid);
+            printf("[database] processing CREATE_CHARACTER request from server session %d\n", data->sender_pid);
 
-        create_char();
+            create_char();
 
-    }
-
-    else if(data->opcode == DELETE_CHARACTER) {
-
-        printf("[database] processing DELETE_CHARACTER request from server session %d\n", data->sender_pid);
-
-        delete_char();
-        
-    }
+            break;
     
-    else if(data->opcode == SHOW_CHARACTER) {
+        case DELETE_CHARACTER:
 
-        printf("[database] processing SHOW_CHARACTER request from server session %d\n", data->sender_pid);
+            printf("[database] processing DELETE_CHARACTER request from server session %d\n", data->sender_pid);
 
-        //show_character();
-        
-    }
+            delete_char();
 
-    else if(data->opcode == EXP_UP) {
+            break;
+    
+        case SHOW_CHARACTER:
 
-        printf("[database] processing EXP_UP request from server session %d\n", data->sender_pid);
+            printf("[database] processing SHOW_CHARACTER request from server session %d\n", data->sender_pid);
 
-        char_exp_up();
+            //show_character();   
 
-    }
+            break;     
+    
+        case EXP_UP:
 
-    else if(data->opcode == EXIT_AND_LOGOUT) {
+            printf("[database] processing EXP_UP request from server session %d\n", data->sender_pid);
 
-        printf("[database] processing EXIT_AND_LOGOUT request from server session %d\n", data->sender_pid);
+            char_exp_up();
 
-        logout();
+            break;
 
-    } 
+        case EXIT_AND_LOGOUT:
 
-    else if(data->opcode == LOGOUT) {
+            printf("[database] processing EXIT_AND_LOGOUT request from server session %d\n", data->sender_pid);
 
-        printf("[database] processing LOGOUT request from server session %d\n", data->sender_pid);
+            logout();
 
-        logout();
+            break;
+
+        case LOGOUT:
+
+            printf("[database] processing LOGOUT request from server session %d\n", data->sender_pid);
+
+            logout();
+
+            break;
+
+        default:
+            printf("Opcode not supported!\n");
+
     }
 
     pthread_mutex_unlock(&mutex);
