@@ -9,26 +9,23 @@
 #include "databasecomm.h"
 #include "daemon.h"
 #include "constants.h"
-#include "semaphores.h"
 
 void srv_sigRutine(int);
-void initDB_calls();
 void newSession(Connection *);
 void server_close();
 void server_process_data();
 
 char * getaddress();
 Data * receiveData(Connection *);
-Data * db_receiveData(DBConnection *);
 
-void loginC();
-void createaccountC();
-void createcharC();
-void deletecharC();
-void showcharC();
-void selectcharC();
-void expUpC();
-void logoutC();
+Data * loginC(Data *);
+Data * createaccountC(Data *);
+Data * createcharC(Data *);
+Data * deletecharC(Data *);
+Data * showcharC(Data *);
+Data * selectcharC(Data *);
+Data * expUpC(Data *);
+Data * logoutC(Data *);
 void exitC();
 
 int session_ended = false;
@@ -38,7 +35,6 @@ Data * data_to_client;
 
 Listener * listener;
 Connection * connection;
-DBConnection * db_connection;
 
 int main(int argc, char *argv[]) {
 
@@ -125,42 +121,42 @@ void server_process_data() {
 
 		case LOGIN:
 
-			loginC();
+			data_to_client = loginC(data_from_client);
 			break;
 
 		case CREATE_ACCOUNT:
 
-			createaccountC();
+			data_to_client = createaccountC(data_from_client);
 			break;
 
 		case CREATE_CHARACTER:
 
-			createcharC();
+			data_to_client = createcharC(data_from_client);
 			break;
 		
 		case DELETE_CHARACTER:
 
-			deletecharC();
+			data_to_client = deletecharC(data_from_client);
 			break;
 
 		case SHOW_CHARACTER:
 
-			showcharC();
+			data_to_client = showcharC(data_from_client);
 			break;
 
 		case SELECT_CHARACTER:
 
-			selectcharC();
+			data_to_client = selectcharC(data_from_client);
 			break;
 
 		case EXP_UP:
 
-			expUpC();
+			data_to_client = expUpC(data_from_client);
 			break;
 		
 		case LOGOUT:
 
-			logoutC();
+			data_to_client = logoutC(data_from_client);
 			break;
 
 		case EXIT:
@@ -179,7 +175,7 @@ void server_process_data() {
 			printf("[session %d] session ended\n", getpid());
 			sndMessage("server session ended", INFO_TYPE);
 
-			logoutC();
+			data_to_client = logoutC(data_from_client);
 
 		    exitC();
 
@@ -192,31 +188,13 @@ void server_process_data() {
 			printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
 			sndMessage("Server is logged out by kill on client", WARNING_TYPE);
 
-		    server_close();
+		    exitC();
 
 			exit(1);
 
 		default:
 			printf("Opcode not supported\n");
 	}
-}
-
-void communicate_with_database() {
-
-	db_connection = db_comm_connect(getaddress("DBSV"));
-
-	if(db_connection == NULL) {
-
-		sndMessage("couldn't connect to database", ERROR_TYPE);
-
-		exit(1);
-	}
-
-	db_sendData(db_connection, data_from_client);
-
-	data_to_client = db_receiveData(db_connection);
-
-	db_comm_disconnect(db_connection);
 }
 
 void server_close() {

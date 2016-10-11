@@ -1,40 +1,69 @@
+#include <stdlib.h>
 
-void communicate_with_database();
+#include "types.h"
+#include "databasecomm.h"
+#include "daemon.h"
+
+char * getaddress();
+Data * db_receiveData(DBConnection *);
+Data * communicate_with_database();
 void server_close();
 
 
-void loginC() {
-	communicate_with_database();
+Data * loginC(Data * data_from_client) {
+	return communicate_with_database(data_from_client);
 }
 
-void createaccountC() {
-	communicate_with_database();
+Data * createaccountC(Data * data_from_client) {
+	return communicate_with_database(data_from_client);
 }
 
-void createcharC() {
-	communicate_with_database();
+Data * createcharC(Data * data_from_client) {
+	return communicate_with_database(data_from_client);
 }
 
-void deletecharC() {
-	communicate_with_database();
+Data * deletecharC(Data * data_from_client) {
+	return communicate_with_database(data_from_client);
 }
 
-void showcharC() {
-	communicate_with_database();
+Data * showcharC(Data * data_from_client) {
+	return communicate_with_database(data_from_client);
 }
 
-void selectcharC() {
-	communicate_with_database();
+Data * selectcharC(Data * data_from_client) {
+	return communicate_with_database(data_from_client);
 }
 
-void expUpC() {
-	communicate_with_database();
+Data * expUpC(Data * data_from_client) {
+	return communicate_with_database(data_from_client);
 }
 
-void logoutC() {
-	communicate_with_database();
+Data * logoutC(Data * data_from_client) {
+	return communicate_with_database(data_from_client);
 }
 
-void exitC() {
+void exitC(Data * data_from_client) {
 	server_close();
+}
+
+Data * communicate_with_database(Data * data_from_client) {
+
+	DBConnection * db_connection;
+
+	db_connection = db_comm_connect(getaddress("DBSV"));
+
+	if(db_connection == NULL) {
+
+		sndMessage("couldn't connect to database", ERROR_TYPE);
+
+		exit(1);
+	}
+
+	db_sendData(db_connection, data_from_client);
+
+	Data * data_to_client = db_receiveData(db_connection);
+
+	db_comm_disconnect(db_connection);
+
+	return data_to_client;
 }
