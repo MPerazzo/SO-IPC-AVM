@@ -178,9 +178,9 @@ void server_process_data() {
 			printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
 			sndMessage("Server is logged out by kill on client", WARNING_TYPE);
 
-		    server_close();
-
 			session_ended = true;
+
+			break;
 
 		default:
 			printf("Opcode not supported\n");

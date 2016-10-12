@@ -478,7 +478,7 @@ void point() {
 
     printf("Your level is %d\n", character.lvl);
 
-    printf("The totalExp you need is %d\n", character.totalExp);
+    printf("The totalExp you need to lvlup is %d\n", character.totalExp);
 
     // Save character data in database in case connection is lost
     if(counter == LIMIT_TOSAVE) {
@@ -564,11 +564,9 @@ void clt_sigRutine(int sig) {
 
     Data * new_data;
 
-    if (session_state == CHAR_SELECTION || session_state == PLAY_GAME) {
-        new_data = newData(LOGOUT);
-        communicate(connection, new_data);
-        free(new_data);
-    }
+    printf("\n");
+
+    logOut();
 
     new_data = newData(CONNECTION_INTERRUMPED);
     

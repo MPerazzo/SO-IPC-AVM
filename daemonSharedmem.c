@@ -170,7 +170,7 @@ int rcvMessage(int type) {
 
 	char * shared_pid = shm_position;
 
-	if ( type != 0 && atoi(shared_type) != type) {
+	if ( type != ALL_TYPES && atoi(shared_type) != type) {
 		binary_semaphore_post(mutex);
 		return -1;
 	}
@@ -200,7 +200,7 @@ int rcv_ErrorMessage() {
 	return rcvMessage(ERROR_TYPE);
 }
 
-void close_daemon() {
+void close_daemoncomms() {
 
 switch (is_dSrv) {
 
