@@ -125,7 +125,7 @@ void quitC(char * account, Connection * connection, bool logout) {
 
         strcpy(data_to_send->user.username, account);
 
-        communicate(connection, data_to_send);
+        sendData(connection, data_to_send);
 
 
     } else {

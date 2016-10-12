@@ -3,6 +3,7 @@
 #include <signal.h>
 
 #include "types.h"
+#include "daemon.h"
 
 void daemon_sigRutine(int);
 
@@ -17,16 +18,15 @@ int main () {
 
 	while (1) {
 		
-		rcvMessage(0);
+		rcvMessage(ALL_TYPES);
 				
 		printMessage();
-		
 	}
 }
 
 void daemon_sigRutine(int sig) {
 
-    close_daemon();
+    close_daemoncomms();
 
     printf("\n");
     printf("Daemon proccess with pid: %d terminated\n", getpid());

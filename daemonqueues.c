@@ -120,7 +120,7 @@ int rcv_ErrorMessage() {
 	return rcvMessage(ERROR_TYPE);
 }
 
-void close_daemon() {
+void close_daemoncomms() {
 /* function not implemented, queues are not closed so when daemonServer loggs reads all the messages
  stored in the queue. No messages are lost, never, ever.
 */

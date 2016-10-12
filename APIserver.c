@@ -42,10 +42,6 @@ Data * logoutC(Data * data_from_client) {
 	return communicate_with_database(data_from_client);
 }
 
-void exitC(Data * data_from_client) {
-	server_close();
-}
-
 Data * communicate_with_database(Data * data_from_client) {
 
 	DBConnection * db_connection;
@@ -59,9 +55,17 @@ Data * communicate_with_database(Data * data_from_client) {
 		exit(1);
 	}
 
-	db_sendData(db_connection, data_from_client);
+	if (db_sendData(db_connection, data_from_client)<0) {
+		sndMessage("couldn't connect to database", ERROR_TYPE);
+		exit(1);
+	}
 
 	Data * data_to_client = db_receiveData(db_connection);
+
+	if (data_to_client == NULL) {
+		sndMessage("couldn't connect to database", ERROR_TYPE);
+		exit(1);
+	}
 
 	db_comm_disconnect(db_connection);
 

@@ -51,5 +51,7 @@ enum explvls { lvl1=10, lvl2=20, lvl3=40, lvl4=80, lvl5=160, lvl6=340, lvl7=680,
 #define BUFF_SIZE 20
 #define LIMIT_TOSAVE 10
 #define QUERY_SIZE 200
+#define FIRST_SESSION 1
+#define FOREVER 65535
 
 #endif

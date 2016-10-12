@@ -7,6 +7,7 @@
 #define WARNING_TYPE 2
 #define ERROR_TYPE 3
 #define MESSAGE_TYPES 3
+#define ALL_TYPES 0
 
 typedef struct Message Message;
 

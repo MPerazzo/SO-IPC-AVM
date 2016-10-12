@@ -3,9 +3,6 @@
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <pthread.h>
 
 #include "types.h"
 #include "comm.h"
@@ -14,37 +11,32 @@
 #include "constants.h"
 
 void srv_sigRutine(int);
+void * newSession(void * args);
+Data * server_process_data(int current_session, bool * session_ended, Data * data_from_client);
 void server_close();
-void server_process_data();
-void communicate_with_database();
-void * newSession(void *);
-
-Data * receiveData(Connection *);
-Data * db_receiveData(DBConnection *);
 
 char * getaddress();
+Data * receiveData(Connection *);
 
-int session_ended = 0;
-
-Data * data_from_client;
-Data * data_to_client;
-
-char character[100];
-int totalExp;
+Data * loginC(Data *);
+Data * createaccountC(Data *);
+Data * createcharC(Data *);
+Data * deletecharC(Data *);
+Data * showcharC(Data *);
+Data * selectcharC(Data *);
+Data * expUpC(Data *);
+Data * logoutC(Data *);
+void exitC();
 
 int session;
-int current_session;
 pthread_t thread_id[MAX_THREADS];
 
 Listener * listener;
 Connection * connection;
-DBConnection * db_connection;
-
-
 
 int main(int argc, char *argv[]) {
 
-	session=0;
+	session = FIRST_SESSION -1;
 
 	printf("[server] initializing\n");
 
@@ -52,13 +44,13 @@ int main(int argc, char *argv[]) {
 
     signal(SIGINT, srv_sigRutine);
 
-    if (initLogin(false) == -1) {
+    if (initLogin(false) < 0) {
 
-    	printf("Couldn´t create message queue for logging daemon\n");
+    	printf("Couldn´t connect to logging daemon\n");
 
     }
 
-    sndMessage("Server initialized", 1);
+    sndMessage("initializing server", INFO_TYPE);
 
 	listener = comm_listen(address);
 
@@ -77,129 +69,137 @@ int main(int argc, char *argv[]) {
 
 		connection = comm_accept(listener);
 
-		if (connection == NULL) {
+		if (connection != NULL) {
 
-			sndMessage("couldn't accept connection from client", ERROR_TYPE);
+			if (session == MAX_THREADS) {
+				printf("Thread limit reached\n");
+				sleep(FOREVER);
+			}
 
-			exit(1);
-
+			pthread_create(&thread_id[session++], NULL ,&newSession, connection );				
+			
 		}
-
-		pthread_create(&thread_id[session++], NULL ,&newSession, connection );	
+		else
+			sndMessage("couldn't accept connection from client", ERROR_TYPE);
 	}
 
 }
 
 void * newSession(void * args) {
 
-
 	Connection * current_connection = (Connection *) args;
+
+	Data * data_from_client;
+	Data * data_to_client;
 
 	printf("[session %d] new client session started\n", session);
 	sndMessage("new client session started", INFO_TYPE);
 
-	int aux = session;
+	int current_session = session;
+
+	bool session_ended = false;
 
 	while (1) {
 
-		while (1) {
-			char buffer[40];
-			sprintf(buffer, "GG %d", aux);
-			sndMessage(buffer, 1);
-		}
-
 		data_from_client = receiveData(current_connection);
 
-		current_session = aux;
-
-		server_process_data();
-
-		sendData(current_connection, data_to_client);
+		data_to_client = server_process_data(current_session, &session_ended, data_from_client);
 
 		if(session_ended) {
-
-			comm_disconnect(current_connection);
-
+			server_close(current_connection);
 			return ;
-
 		}
 
+		sendData(current_connection, data_to_client);
 	}
 
 }
 
-void server_process_data() {
+Data * server_process_data(int current_session, bool * session_ended, Data * data_from_client) {
 
-	int server_session = current_session;
+	switch(data_from_client->opcode) {
 
-	if(data_from_client->opcode == SELECT_CHARACTER) {
+		case LOGIN:
 
-		communicate_with_database();
+			return loginC(data_from_client);
 
-	} else if(data_from_client->opcode == CREATE_CHARACTER) {
+		case CREATE_ACCOUNT:
 
-		printf("[session %d] character created\n", server_session);
+			return createaccountC(data_from_client);
 
-		sndMessage("Character created", INFO_TYPE);
+		case CREATE_CHARACTER:
 
-		communicate_with_database();
+			return createcharC(data_from_client);
+		
+		case DELETE_CHARACTER:
 
-	} else if(data_from_client->opcode == DELETE_CHARACTER) {
+			return deletecharC(data_from_client);
 
-		printf("[session %d] character deleted\n", server_session);
+		case SHOW_CHARACTER:
 
-		sndMessage("Character deleted", INFO_TYPE);
+			return showcharC(data_from_client);
 
-		communicate_with_database();
+		case SELECT_CHARACTER:
 
-	} else if(data_from_client->opcode == EXP_UP) {
+			return selectcharC(data_from_client);
 
-		communicate_with_database();
+		case EXP_UP:
 
-	} else if(data_from_client->opcode == EXIT) {
+			return expUpC(data_from_client);
+		
+		case LOGOUT:
 
-		printf("[session %d] session ended\n", server_session);
-		sndMessage("server session ended", INFO_TYPE);
+			return logoutC(data_from_client);
 
-		session_ended = 1;
+		case EXIT_AND_LOGOUT:
 
-	} else if(data_from_client->opcode == EXIT_AND_LOGOUT) {
+			printf("[session %d] session ended\n", current_session);
+			sndMessage("server session ended", INFO_TYPE);
 
-		printf("[session %d] session ended\n", server_session);
-		sndMessage("server session ended", INFO_TYPE);
+			logoutC(data_from_client);
 
-		communicate_with_database();
+			*session_ended = true;
 
-		session_ended = 1;
+			return NULL;
 
+		case EXIT:
+
+			printf("[session %d] session ended\n", current_session);
+			sndMessage("server session ended", INFO_TYPE);
+
+			*session_ended = true;
+
+			return NULL;
+
+		case CONNECTION_INTERRUMPED:
+
+			printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", current_session);
+			sndMessage("Server is logged out by kill on client", WARNING_TYPE);
+
+			*session_ended = true;
+
+			return NULL;
+
+		default:
+			printf("Opcode not supported\n");
 	}
-
 }
 
-void communicate_with_database() {
-
-	db_connection = db_comm_connect(getaddress("DBSV"));
-
-	if(db_connection == NULL) {
-
-		sndMessage("couldn't connect to database", ERROR_TYPE);
-
-		exit(1);
-
-	}
-
-	db_sendData(db_connection, data_from_client);
-
-	data_to_client = db_receiveData(db_connection);
-
-	db_comm_disconnect(db_connection);
-
+void server_close(Connection * connection) {
+	comm_disconnect(connection);
+	free(connection);
 }
 
 void srv_sigRutine(int sig) {
 
-	sndMessage("Server logged out by kill()", WARNING_TYPE);
-    
-    exit(1);
+    sndMessage("Server logged out by kill()", WARNING_TYPE);
 
+    free(listener);
+
+    close_daemoncomms();
+
+    printf("\n");
+    printf("Server proccess with pid: %d terminated\n", getpid());
+
+    exit(1);
 }

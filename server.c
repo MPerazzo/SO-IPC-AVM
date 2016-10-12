@@ -26,9 +26,8 @@ Data * showcharC(Data *);
 Data * selectcharC(Data *);
 Data * expUpC(Data *);
 Data * logoutC(Data *);
-void exitC();
 
-int session_ended = false;
+bool session_ended = false;
 
 Data * data_from_client;
 Data * data_to_client;
@@ -69,23 +68,20 @@ int main(int argc, char *argv[]) {
 
 		connection = comm_accept(listener);
 
-		if (connection == NULL) {
+		if (connection != NULL) {
 
+			int newpid = fork();
+
+			if(newpid == 0) {
+
+				newSession(connection);
+
+				return 0;
+			}
+
+		}
+		else
 			sndMessage("couldn't accept connection from client", ERROR_TYPE);
-
-			exit(1);
-
-		}
-		int newpid = fork();
-
-		if(newpid == 0) {
-
-			newSession(connection);
-
-			return 0;
-		
-		}
-
 	}
 
 }
@@ -101,8 +97,6 @@ void newSession(Connection * connection) {
 
 		server_process_data();
 
-		sendData(connection, data_to_client);
-
 		if(session_ended) {
 
 			server_close();
@@ -110,7 +104,7 @@ void newSession(Connection * connection) {
 			return ;
 
 		}
-
+		sendData(connection, data_to_client);
 	}
 
 }
@@ -159,25 +153,21 @@ void server_process_data() {
 			data_to_client = logoutC(data_from_client);
 			break;
 
-		case EXIT:
-
-			printf("[session %d] session ended\n", getpid());
-			sndMessage("server session ended", INFO_TYPE);
-
-		    exitC();
-
-			session_ended = true;
-
-			break;
-
 		case EXIT_AND_LOGOUT:
 
 			printf("[session %d] session ended\n", getpid());
 			sndMessage("server session ended", INFO_TYPE);
 
-			data_to_client = logoutC(data_from_client);
+			logoutC(data_from_client);
 
-		    exitC();
+			session_ended = true;
+
+			break;
+
+		case EXIT:
+
+			printf("[session %d] session ended\n", getpid());
+			sndMessage("server session ended", INFO_TYPE);
 
 			session_ended = true;
 
@@ -188,9 +178,9 @@ void server_process_data() {
 			printf("[session %d] session ended, CONNECTION_INTERRUMPED opcode received\n", getpid());
 			sndMessage("Server is logged out by kill on client", WARNING_TYPE);
 
-		    exitC();
+		    server_close();
 
-			exit(1);
+			session_ended = true;
 
 		default:
 			printf("Opcode not supported\n");
@@ -200,14 +190,14 @@ void server_process_data() {
 void server_close() {
 	comm_disconnect(connection);
 	free(connection);
-    close_daemon();
+    close_daemoncomms();
 }
 
 void srv_sigRutine(int sig) {
 
     sndMessage("Server logged out by kill()", WARNING_TYPE);
 
-    close_daemon();
+    close_daemoncomms();
 
     printf("\n");
     printf("Server proccess with pid: %d terminated\n", getpid());

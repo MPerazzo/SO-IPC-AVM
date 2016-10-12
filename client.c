@@ -566,7 +566,7 @@ void clt_sigRutine(int sig) {
 
     if (session_state == CHAR_SELECTION || session_state == PLAY_GAME) {
         new_data = newData(LOGOUT);
-        sendData(connection, new_data);
+        communicate(connection, new_data);
         free(new_data);
     }
 
