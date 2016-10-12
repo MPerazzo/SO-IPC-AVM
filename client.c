@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include "types.h"
 #include "comm.h"
@@ -12,6 +13,7 @@ void loadCommands();
 void parser(char * , int);
 int splitArgs(char * , char * args[], int);
 char * strCpy(char * );
+bool isvalid_arg(char * arg);
 
 void login(char *, char *);
 void createAccount(char *, char *);
@@ -204,13 +206,29 @@ void parser(char * buffer, int state) {
             } else {
 
                 switch (commands[i].cantArgs) {
+                
                 case 0:
+                
                     commands[i].function();
                     break;
+                
                 case 1:
+                	
+                	if (!isvalid_arg(args[1])) {
+    					printf("Request refused. To prevent injection of code to the SQL database only numbers or alphabet letters are allowed as arguments.\n");
+                		break;
+                	}
+
                     commands[i].function(args[1]);
                     break;
+                
                 case 2:
+                	
+                	if (!isvalid_arg(args[1]) || !isvalid_arg(args[2])) {
+    					printf("Request refused. To prevent injection of code to the SQL database only numbers or alphabet letters are allowed as arguments.\n");
+    					break;
+                	}
+
                     commands[i].function(args[1], args[2]);
                     break;
                 }
@@ -276,6 +294,15 @@ char * strCpy(char * str) {
     }
     aux[i] = 0;
     return aux;
+}
+
+bool isvalid_arg(char * arg) {
+	char * aux = arg;
+	while (*aux != '\0') {
+		if (!isalnum(*(aux++)))
+			return false;
+	}
+	return true;
 }
 
 void login(char * account, char * password) {
