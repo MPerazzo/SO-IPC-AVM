@@ -37,7 +37,7 @@ enum explvls { lvl1=10, lvl2=20, lvl3=40, lvl4=80, lvl5=160, lvl6=340, lvl7=680,
 
 /*lengths, sizes and others*/
 #define CANT_ARGS 5
-#define COMM_SIZE 10
+#define COMM_SIZE 11
 #define STATES 6
 #define BLOCK 10
 #define LEVEL_MAX 10

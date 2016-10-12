@@ -25,6 +25,7 @@ void point();
 void quit();
 void logOut();
 void help();
+void clear();
 
 Data * loginC(char *,char *, Connection *);
 Data * createAccountC(char *, char *, Connection *);
@@ -173,13 +174,22 @@ void loadCommands() {
     commands[8].actionOnState[PLAY_GAME] = 1;
     strcpy(commands[8].description, "No parameters\nDescription: Exit to this game.\n");
 
-    commands[9].name = "help";
-    commands[9].function = (func)&help;
+
+    commands[9].name = "clear";
+    commands[9].function = (func)&clear;
     commands[9].cantArgs = 0;
     commands[9].actionOnState[USER_LOGIN] = 1;
     commands[9].actionOnState[CHAR_SELECTION] = 1;
     commands[9].actionOnState[PLAY_GAME] = 1;
-    strcpy(commands[9].description, "No parameters\nDescription: Show conmmands description.\n");   
+    strcpy(commands[9].description, "No parameters\nDescription: Clears screen.\n");
+
+    commands[10].name = "help";
+    commands[10].function = (func)&help;
+    commands[10].cantArgs = 0;
+    commands[10].actionOnState[USER_LOGIN] = 1;
+    commands[10].actionOnState[CHAR_SELECTION] = 1;
+    commands[10].actionOnState[PLAY_GAME] = 1;
+    strcpy(commands[10].description, "No parameters\nDescription: Show conmmands description.\n");   
 
 }
 
@@ -304,6 +314,11 @@ bool isvalid_arg(char * arg) {
 			return false;
 	}
 	return true;
+}
+
+void clear() {
+	printf("\033[H\033[J");
+	//system("clear");
 }
 
 void login(char * account, char * password) {
