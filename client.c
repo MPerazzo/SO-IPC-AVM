@@ -296,6 +296,7 @@ char * strCpy(char * str) {
     return aux;
 }
 
+// to prevent some cases of injection of code to SQL database.
 bool isvalid_arg(char * arg) {
 	char * aux = arg;
 	while (*aux != '\0') {
