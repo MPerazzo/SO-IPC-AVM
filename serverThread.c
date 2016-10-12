@@ -72,8 +72,8 @@ int main(int argc, char *argv[]) {
 		if (connection != NULL) {
 
 			if (session == MAX_THREADS) {
-				printf("Thread limit reached\n");
-				sleep(FOREVER);
+				printf("Thread limit reached, server will sleep. FOREVER..\n");
+				sleep(FOREVER); // to let other threads that are running to keep working on comms
 			}
 
 			pthread_create(&thread_id[session++], NULL ,&newSession, connection );				

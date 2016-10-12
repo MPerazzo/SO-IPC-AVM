@@ -52,19 +52,23 @@ Data * communicate_with_database(Data * data_from_client) {
 
 		sndMessage("couldn't connect to database", ERROR_TYPE);
 
-		exit(1);
+		return NULL;
 	}
 
 	if (db_sendData(db_connection, data_from_client)<0) {
-		sndMessage("couldn't connect to database", ERROR_TYPE);
-		exit(1);
+		
+		sndMessage("couldn't send data to database", ERROR_TYPE);
+		
+		return NULL;
 	}
 
 	Data * data_to_client = db_receiveData(db_connection);
 
 	if (data_to_client == NULL) {
-		sndMessage("couldn't connect to database", ERROR_TYPE);
-		exit(1);
+		
+		sndMessage("couldn't receive data from database", ERROR_TYPE);
+		
+		return NULL;
 	}
 
 	db_comm_disconnect(db_connection);
