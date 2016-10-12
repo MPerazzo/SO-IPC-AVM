@@ -1,14 +1,14 @@
-# To compile there are two options of comm between server and client (fifo or sock), 	                    ##
-# and two between server and Daemon (SharedMem or Queues).						    						##
- 													   														##
-# s is an alias for Sockets.									            								##
-# f is an alias for Fifos.									            									##
-													    													##
-# q is an alias for Queues.									           									    ##
-# m is an alias for SharedMemory.									    									##
-													    													##
-#threads with sharedMem does not work. But it works with queues.					                        ##
-													    													##
+# To compile there are two options of comm between server and client (fifo or sock),                        ##
+# and two between server and Daemon (SharedMem or Queues).                                                  ##
+                                                                                                            ##
+# s is an alias for Sockets.                                                                                ##
+# f is an alias for Fifos.                                                                                  ##
+                                                                                                            ##
+# q is an alias for Queues.                                                                                 ##
+# m is an alias for SharedMemory.                                                                           ##
+                                                                                                            ##
+#threads with sharedMem does not work. But it works with queues.                                            ##
+                                                                                                            ##
 ##############################################################################################################
 
 #Server with threads and queues:
