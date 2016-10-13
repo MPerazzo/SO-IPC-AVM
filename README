@@ -1,9 +1,7 @@
-run database before running server
-run loggingdaemon before running server
-run server before running clients
+To run successfuly without losing information, proceed with the following order:
+	
+	1-run database before running server
+	2-run loggingdaemon before running server
+	3-run server before running clients
+	4-run clients
 
-make commands:
-
-make sockets
-make fifos
-make clean

@@ -7,9 +7,10 @@
 # q is an alias for Queues.                                                                                 ##
 # m is an alias for SharedMemory.                                                                           ##
                                                                                                             ##
-#threads with sharedMem does not work. But it works with queues.                                            ##
+#threads with sharedMem does not work as shared uses semaphores. But it works with queues.                  ##
                                                                                                             ##
 ##############################################################################################################
+
 
 #Server with threads and queues:
 
