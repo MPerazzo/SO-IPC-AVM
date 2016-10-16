@@ -416,7 +416,7 @@ void createCharacter(char * name) {
 
     if(strlen(name) > SIZE) {
 
-        printf("[client] Limit of characters exceeded. The maximum is twenty for your character name.\n");
+        printf("[client] Character name is too long. Cannot have more than 20 characters.\n");
 
         return;
     }
@@ -471,13 +471,15 @@ void deleteCharacter(char * name) {
 
 void showCharacters() {
 
-    /*data_from_server = showCharactersC(username, connection);
+    data_from_server = showCharactersC(username, connection);
+
+	printf("char quantity = %d\n", data_from_server->numberofchars);
 
     if(data_from_server->opcode == NO_ERROR) {
 
         int i;
 
-        for(i = 0 ; i < data_from_server->cantChars ; i++) {
+        for(i = 0 ; i < data_from_server->numberofchars ; i++) {
 
         printf("==============================================\n");
 
@@ -493,7 +495,7 @@ void showCharacters() {
 
     }
 
-    free(data_from_server);*/
+    free(data_from_server);
 }
 
 void point() {

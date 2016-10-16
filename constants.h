@@ -27,6 +27,7 @@ enum explvls { lvl1=10, lvl2=20, lvl3=40, lvl4=80, lvl5=160, lvl6=340, lvl7=680,
 #define USER_BUSY 25
 #define USER_ALREADY_EXISTS 26
 #define TOO_MANY_CHARS 27
+#define NO_CHARS 28
 #define NO_ERROR 500
 
 #define EXIT 200

@@ -19,10 +19,12 @@ void select_char();
 void delete_char();
 void logout();
 void char_exp_up();
+void show_characters();
 
 int select_callback(void *, int, char **, char **);
 int delete_callback(void *, int, char **, char **);
 int login_callback(void *, int, char **, char **);
+int show_callback(void *, int, char **, char **);
 int create_account_callback(void *, int, char **, char **);
 
 char * getaddress(char *);
@@ -170,7 +172,7 @@ void process_data() {
 
             printf("[database] processing SHOW_CHARACTER request from server session %d\n", data->sender_pid);
 
-            //show_character();   
+            show_characters();   
 
             break;     
     
@@ -294,6 +296,33 @@ void create_char() {
 
     data->opcode = NO_ERROR;
 
+}
+
+void show_characters() {
+
+    data->numberofchars = 0;
+
+    data->opcode = NO_CHARS;
+
+    sprintf(query, "SELECT * FROM Chars WHERE Name = '%s'", data->user.username);
+
+    rc = sqlite3_exec(db, query, show_callback, 0, &err_msg);
+
+}
+
+int show_callback(void *notused, int argc, char **argv, char **azColName) {
+    int i = data->numberofchars;
+
+    strcpy(data->characters[i].name, argv[0]);
+    data->characters[i].lvl = atoi(argv[1]);
+    data->characters[i].totalExp = atoi(argv[2]);
+    data->characters[i].currentExp = atoi(argv[3]);
+
+    data->numberofchars++;
+
+    data->opcode = NO_ERROR;
+
+    return 0;
 }
 
 void select_char() {

@@ -24,7 +24,7 @@ typedef struct __attribute__((__packed__)) {
 	Opcode opcode;
 	Character characters[MAX_CHARACTERS];
 	Character character;
-	int cantChars;
+	int numberofchars;
 	User user;
 } Data;
 
